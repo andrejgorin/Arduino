@@ -3,9 +3,9 @@
 #include <DallasTemperature.h>
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 20, 4); // LCD screen
-#define ONE_WIRE_BUS 9 // Data wire is plugged into port 9 on the Arduino
-#define precision 9   // OneWire precision Dallas Sensor
-int sen_number = 0;    // Counter of Dallas sensors
+#define ONE_WIRE_BUS 9                                  // Data wire is plugged into port 9 on the Arduino
+#define precision 9                                     // OneWire precision Dallas Sensor
+int sen_number = 0;                                     // Counter of Dallas sensors
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);          // Pass our oneWire reference to Dallas Temperature.
