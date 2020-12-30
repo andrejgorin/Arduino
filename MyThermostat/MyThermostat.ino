@@ -1,27 +1,47 @@
 /* Comment this out to disable prints and save space */
-#define BLYNK_PRINT Serial
-#define BLYNK_DEBUG
-#define DEBUG_PRINT
+// #define BLYNK_PRINT Serial
+// #define BLYNK_DEBUG
 
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
+#include <TimeLib.h>
+#include <WidgetRTC.h>
+
+#define VPIN_UPTIME V5
+#define VPIN_LED V2
+#define RPIN_LED 2
+#define VPIN_TIME V6
 
 char auth[] = "";
 char ssid[] = "";
 char pass[] = "";
+
 int ledValue = 255;
-int LED = 2;
+String fullip;
+String body;
 
 BlynkTimer timer;
+WidgetRTC rtc;
+
+BLYNK_CONNECTED()
+{
+  Blynk.syncAll();       // sync all
+  Blynk.syncVirtual(V0); // sync V0
+  rtc.begin();
+}
 
 void setup()
 {
-  // Debug console
-  Serial.begin(115200);
-  pinMode(LED, OUTPUT);
+  // Serial.begin(115200); // Debug console
+  pinMode(RPIN_LED, OUTPUT);
   Blynk.begin(auth, ssid, pass);
   timer.setInterval(1000L, myTimerEvent);
-  Blynk.email("andrejgorin@gmail.com", "MySubject", "Thermostat started");
+  IPAddress myip = WiFi.localIP();
+  fullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
+  body = "Thermostat started. IP address: " + fullip;
+  Blynk.email("andrejgorin@gmail.com", "MySubject", body);
+  setSyncInterval(10 * 60);
+  // Serial.print("hour: ");
 }
 
 void loop()
@@ -30,10 +50,18 @@ void loop()
   timer.run();
 }
 
+BLYNK_READ(VPIN_UPTIME)
+{
+  Blynk.virtualWrite(VPIN_UPTIME, millis() / 1000); // Arduino's uptime
+  String time = String(hour()) + ":" + minute() + ":" + second();
+  String date = String(day()) + "-" + month() + "-" + year();
+  Blynk.virtualWrite(VPIN_TIME, date + " " + time); // Arduino's current time
+}
+
 BLYNK_WRITE(V0)
 {
   int pinValue = param.asInt();
-  digitalWrite(LED, pinValue);
+  digitalWrite(RPIN_LED, pinValue);
   if (pinValue == 1)
   {
     ledValue = 0;
@@ -46,7 +74,5 @@ BLYNK_WRITE(V0)
 
 void myTimerEvent()
 {
-  Blynk.virtualWrite(V2, ledValue); // Please don't send more that 10 values per second.
+  Blynk.virtualWrite(VPIN_LED, ledValue); // Please don't send more that 10 values per second.
 }
-
-BLYNK_CONNECTED() { Blynk.syncAll(); }
