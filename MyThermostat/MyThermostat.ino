@@ -7,10 +7,14 @@
 #include <TimeLib.h>
 #include <WidgetRTC.h>
 
+#define MAIL "andrejgorin@gmail.com"
+#define SUBJECT "Thermostat info"
+#define SYNC_INTERVAL (10 * 60)
 #define VPIN_UPTIME V5
 #define VPIN_LED V2
 #define RPIN_LED 2
 #define VPIN_TIME V6
+#define VPIN_BUTTON V0
 
 char auth[] = "";
 char ssid[] = "";
@@ -39,8 +43,9 @@ void setup()
   IPAddress myip = WiFi.localIP();
   fullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
   body = "Thermostat started. IP address: " + fullip;
-  Blynk.email("andrejgorin@gmail.com", "MySubject", body);
-  setSyncInterval(10 * 60);
+  mailme(body);
+  // Blynk.email(MAIL, SUBJECT, body);
+  setSyncInterval(SYNC_INTERVAL);
   // Serial.print("hour: ");
 }
 
@@ -48,6 +53,11 @@ void loop()
 {
   Blynk.run();
   timer.run();
+}
+
+void mailme(String body)
+{
+  Blynk.email(MAIL, SUBJECT, body);
 }
 
 BLYNK_READ(VPIN_UPTIME)
@@ -58,7 +68,7 @@ BLYNK_READ(VPIN_UPTIME)
   Blynk.virtualWrite(VPIN_TIME, date + " " + time); // Arduino's current time
 }
 
-BLYNK_WRITE(V0)
+BLYNK_WRITE(VPIN_BUTTON)
 {
   int pinValue = param.asInt();
   digitalWrite(RPIN_LED, pinValue);
