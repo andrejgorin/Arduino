@@ -73,10 +73,15 @@ void mailme(const String body)
   Blynk.email(MAIL, SUBJECT, body);
 }
 
-// push board uptime and time to blynk
+// push board uptime to blynk
 BLYNK_READ(VPIN_UPTIME)
 {
   Blynk.virtualWrite(VPIN_UPTIME, millis() / 1000); // Arduino's uptime
+}
+
+// push board time to blynk
+BLYNK_READ(VPIN_TIME)
+{
   String time = String(hour()) + ":" + minute() + ":" + second();
   String date = String(day()) + "-" + month() + "-" + year();
   Blynk.virtualWrite(VPIN_TIME, date + " " + time); // Arduino's current time
