@@ -7,7 +7,6 @@
 #include <TimeLib.h>
 #include <WidgetRTC.h>
 
-#define MAIL "andrejgorin@gmail.com"
 #define SUBJECT "Thermostat info"
 #define SYNC_INTERVAL (10 * 60)
 #define VPIN_UPTIME V5
@@ -19,6 +18,8 @@
 #define VPIN_BUTTON V0
 #define VPIN_BUTTON2 V1
 
+// section to add your settings 
+#define MAIL ""
 char auth[] = "";
 char ssid[] = "";
 char pass[] = "";
