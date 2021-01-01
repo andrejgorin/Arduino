@@ -1,11 +1,9 @@
-// простейшие динамические эффекты
-// сначала ознакомься с примером microLED_guide !!!
-
 #define STRIP_PIN 2     // пин ленты
 #define NUMLEDS 60      // кол-во светодиодов
 
 #define COLOR_DEBTH 3
 #include <microLED.h>   // подключаем библу
+
 microLED<NUMLEDS, STRIP_PIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip;
 
 // functions declaration
@@ -16,7 +14,7 @@ void runningDots();
 void breathing();
 
 void setup() {
-  strip.setBrightness(60);
+  strip.setBrightness(255);
 }
 
 void loop() {
@@ -28,13 +26,13 @@ void loop() {
   //runningDots();  // бегущие точки
 
   // вывод
-  breathing();    // "дыхание" яркости, применяется ко всем эффектам
+  // breathing();    // "дыхание" яркости, применяется ко всем эффектам
   strip.show();   // вывод
   delay(30);      // 30 кадров в секунду
 }
 
 void rainbow() {
-  static byte counter = 0;
+  static int counter = 0;
   for (int i = 0; i < NUMLEDS; i++) {
     strip.set(i, mWheel8(counter + i * 255 / NUMLEDS));   // counter смещает цвет
   }
@@ -50,13 +48,13 @@ void filler() {
 }
 
 void colorCycle() {
-  static byte counter = 0;
+  static int counter = 0;
   strip.fill(mWheel8(counter));
   counter += 3;
 }
 
 void runningDots() {
-  static byte counter = 0;
+  static int counter = 0;
   // перемотка буфера со сдвигом (иллюзия движения пикселей)
   for (int i = 0; i < NUMLEDS - 1; i++) strip.leds[i] = strip.leds[i + 1];
 

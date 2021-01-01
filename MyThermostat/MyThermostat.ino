@@ -7,6 +7,9 @@
 #include <TimeLib.h>
 #include <WidgetRTC.h>
 
+// where my sensitive info stored - MAIL, AUTH, SSID, PASS
+#include <MyCredentials.h>
+
 #define SUBJECT "Thermostat info"
 #define SYNC_INTERVAL (10 * 60)
 #define VPIN_UPTIME V5
@@ -19,10 +22,10 @@
 #define VPIN_BUTTON2 V1
 
 // section to add your settings 
-#define MAIL ""
-char auth[] = "";
-char ssid[] = "";
-char pass[] = "";
+const char *MYMAIL = MAIL;
+const char *MYAUTH = AUTH;
+const char *MYSSID = SSID;
+const char *MYPASS = PASS;
 
 int ledValue = 255;
 int ledValue2 = 255;
@@ -51,7 +54,7 @@ void setup()
   // Serial.begin(115200); // Debug console
   pinMode(RPIN_LED, OUTPUT);
   pinMode(RPIN_RELAY1, OUTPUT);
-  Blynk.begin(auth, ssid, pass);
+  Blynk.begin(MYAUTH, MYSSID, MYPASS);
   timer.setInterval(1000L, myTimerEvent);
   IPAddress myip = WiFi.localIP();
   fullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
@@ -70,7 +73,7 @@ void loop()
 // send email
 void mailme(const String body)
 {
-  Blynk.email(MAIL, SUBJECT, body);
+  Blynk.email(MYMAIL, SUBJECT, body);
 }
 
 // push board uptime to blynk
