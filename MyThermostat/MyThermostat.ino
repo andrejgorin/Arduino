@@ -28,9 +28,11 @@ const char *MYPASS = PASS;
 #define RPIN_LED 2
 #define RPIN_RELAY1 16
 
-// variable initialization
+// constants initialization
 const char SUBJECT[] = "Thermostat info";
 const int SYNC_INTERVAL = (10 * 60);
+
+// variable initialization
 int ledValue = 255;
 int ledValue2 = 255;
 String fullip = "";
