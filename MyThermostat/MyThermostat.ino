@@ -10,29 +10,33 @@
 // where my sensitive info stored - MAIL, AUTH, SSID, PASS
 #include <MyCredentials.h>
 
-#define SUBJECT "Thermostat info"
-#define SYNC_INTERVAL (10 * 60)
-#define VPIN_UPTIME V5
-#define VPIN_LED V2
-#define VPIN_LED2 V3
-#define RPIN_LED 2
-#define RPIN_RELAY1 16
-#define VPIN_TIME V6
-#define VPIN_BUTTON V0
-#define VPIN_BUTTON2 V1
-
-// section to add your settings 
+// section to add your sensitive settings 
 const char *MYMAIL = MAIL;
 const char *MYAUTH = AUTH;
 const char *MYSSID = SSID;
 const char *MYPASS = PASS;
 
+// virtual pins defined
+#define VPIN_UPTIME V5
+#define VPIN_LED V2
+#define VPIN_LED2 V3
+#define VPIN_TIME V6
+#define VPIN_BUTTON V0
+#define VPIN_BUTTON2 V1
+
+// real pins defined
+#define RPIN_LED 2
+#define RPIN_RELAY1 16
+
+// variable initialization
+const char SUBJECT[] = "Thermostat info";
+const int SYNC_INTERVAL = (10 * 60);
 int ledValue = 255;
 int ledValue2 = 255;
+String fullip = "";
+String body = "";
 
-String fullip;
-String body;
-
+// blynk timer and RTC initialization
 BlynkTimer timer;
 WidgetRTC rtc;
 
@@ -45,7 +49,7 @@ void myTimerEvent();
 BLYNK_CONNECTED()
 {
   Blynk.syncAll();       // sync all
-  Blynk.syncVirtual(V0); // sync V0
+  // Blynk.syncVirtual(V0); // sync V0
   rtc.begin();
 }
 
