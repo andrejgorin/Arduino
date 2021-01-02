@@ -11,7 +11,7 @@
 // where my sensitive info stored - MAIL, AUTH, SSID, PASS
 #include <MyCredentials.h>
 
-// section to add your sensitive settings 
+// section to add your sensitive settings
 const char *MYMAIL = MAIL;
 const char *MYAUTH = AUTH;
 const char *MYSSID = SSID;
@@ -51,7 +51,7 @@ void myTimerEvent();
 // perform actions after connected to blynk server
 BLYNK_CONNECTED()
 {
-  Blynk.syncAll();       // sync all
+  Blynk.syncAll(); // sync all
   // Blynk.syncVirtual(V0); // sync V0
   rtc.begin();
 }
