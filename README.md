@@ -1,2 +1,0 @@
-# Arduino
-My Arduino projects

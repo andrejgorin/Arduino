@@ -2,6 +2,7 @@
 // #define BLYNK_PRINT Serial
 // #define BLYNK_DEBUG
 
+#include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 #include <TimeLib.h>
