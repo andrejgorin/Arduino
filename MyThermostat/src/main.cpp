@@ -16,7 +16,7 @@
 #include <Bounce2.h>
 
 /* where my sensitive info stored - MAIL, AUTH, SSID, PASS */
-#include "MyCredentials.h" 
+#include "MyCredentials.h"
 
 /* section to add your sensitive settings */
 const char *MYMAIL = MAIL;
@@ -176,12 +176,11 @@ void myTimerEvent()
     //  digitalWrite(RPIN_GREENLED, blink);
     //  Blynk.virtualWrite(VPIN_GREEN, myled(HIGH));
   }
-  
 }
 
 /* toggle led state */
 int toggleLed(bool state, int led, int vpin)
-{ 
+{
   state = state ? LOW : HIGH;
   digitalWrite(led, state);
   Blynk.virtualWrite(vpin, myled(state));
