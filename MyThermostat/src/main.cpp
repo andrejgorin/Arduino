@@ -7,6 +7,7 @@
 #include <BlynkSimpleEsp8266.h>
 #include <TimeLib.h>
 #include <WidgetRTC.h>
+#include <Bounce2.h>
 
 // where my sensitive info stored - MAIL, AUTH, SSID, PASS
 #include <MyCredentials.h>
@@ -24,10 +25,13 @@ const char *MYPASS = PASS;
 #define VPIN_TIME V6
 #define VPIN_BUTTON V0
 #define VPIN_BUTTON2 V1
+#define VPIN_GREEN V11
 
 // real pins defined
 #define RPIN_LED 2
+#define RPIN_GREENLED 5
 #define RPIN_RELAY1 16
+#define RBUTTON_1 4
 
 // constants initialization
 const char SUBJECT[] = "Thermostat info";
@@ -38,15 +42,19 @@ int ledValue = 255;
 int ledValue2 = 255;
 String fullip = "";
 String body = "";
+bool ledGreen = LOW;
+bool blink = LOW;
 
-// blynk timer and RTC initialization
+// blynk timer, button and RTC initialization
 BlynkTimer timer;
 WidgetRTC rtc;
+Button button = Button();
 
 // declaration of functions
 void mailme(const String body);
-int myled(const int value);
+int myled(const bool value);
 void myTimerEvent();
+int toggleLed(bool state, int led);
 
 // perform actions after connected to blynk server
 BLYNK_CONNECTED()
@@ -61,6 +69,8 @@ void setup()
   // Serial.begin(115200); // Debug console
   pinMode(RPIN_LED, OUTPUT);
   pinMode(RPIN_RELAY1, OUTPUT);
+  pinMode(RPIN_GREENLED, OUTPUT);
+  digitalWrite(RPIN_GREENLED, ledGreen);
   Blynk.begin(MYAUTH, MYSSID, MYPASS);
   timer.setInterval(1000L, myTimerEvent);
   IPAddress myip = WiFi.localIP();
@@ -68,13 +78,21 @@ void setup()
   body = "Thermostat started. IP address: " + fullip;
   mailme(body);
   setSyncInterval(SYNC_INTERVAL);
-  // Serial.print("hour: ");
+  // button
+  button.attach(RBUTTON_1, INPUT);
+  button.interval(50);
+  button.setPressedState(HIGH);
 }
 
 void loop()
 {
   Blynk.run();
   timer.run();
+  button.update();
+  if (button.pressed())
+  {
+    ledGreen = !ledGreen;
+  }
 }
 
 // send email
@@ -114,10 +132,10 @@ BLYNK_WRITE(VPIN_BUTTON2)
 }
 
 // convert 1 to 255 and 0 to 0 for leds
-int myled(const int value)
+int myled(const bool value)
 {
   int ledvalue;
-  if (value == 1)
+  if (value == HIGH)
   {
     ledvalue = 0;
   }
@@ -133,4 +151,24 @@ void myTimerEvent()
 {
   Blynk.virtualWrite(VPIN_LED, ledValue); // Please don't send more that 10 values per second.
   Blynk.virtualWrite(VPIN_LED2, ledValue2);
+  if (ledGreen == HIGH)
+  {
+    blink = toggleLed(blink, RPIN_GREENLED);
+  }
+  else
+  {
+    blink = LOW;
+    digitalWrite(RPIN_GREENLED, blink);
+    Blynk.virtualWrite(VPIN_GREEN, myled(HIGH));
+  }
+  
+}
+
+// toggle led state
+int toggleLed(bool state, int led)
+{ 
+  state = state ? LOW : HIGH;
+  digitalWrite(led, state);
+  Blynk.virtualWrite(VPIN_GREEN, myled(state));
+  return state;
 }
