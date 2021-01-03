@@ -16,6 +16,7 @@ void breathing();
 
 void setup()
 {
+  // Serial.begin(9600);
   strip.setBrightness(255);
 }
 
@@ -32,6 +33,7 @@ void loop()
   // breathing();    // "дыхание" яркости, применяется ко всем эффектам
   strip.show(); // вывод
   delay(30);    // 30 кадров в секунду
+  // Serial.println("loop!");
 }
 
 void rainbow()
