@@ -1,3 +1,9 @@
+/* Testing some hardware and Blynk software */
+/* TODO: temperature sensor ds18b20 */
+/* TODO: i2c lcd screen */
+/* TODO: RTC DS3231 */
+/* TODO: ttl level converter TXS0108 */
+
 /* Comment this out to disable prints and save space */
 // #define BLYNK_PRINT Serial
 // #define BLYNK_DEBUG
@@ -9,35 +15,35 @@
 #include <WidgetRTC.h>
 #include <Bounce2.h>
 
-// where my sensitive info stored - MAIL, AUTH, SSID, PASS
+/* where my sensitive info stored - MAIL, AUTH, SSID, PASS */
 #include "MyCredentials.h" 
 
-// section to add your sensitive settings
+/* section to add your sensitive settings */
 const char *MYMAIL = MAIL;
 const char *MYAUTH = AUTH;
 const char *MYSSID = SSID;
 const char *MYPASS = PASS;
 
-// virtual pins defined
+/* virtual pins defined */
 #define VPIN_UPTIME V5
 #define VPIN_LED V2
-#define VPIN_LED2 V3
-#define VPIN_TIME V6
 #define VPIN_BUTTON V0
+#define VPIN_LED2 V3
 #define VPIN_BUTTON2 V1
+#define VPIN_TIME V6
 #define VPIN_GREEN V11
 
-// real pins defined
+/* real pins defined */
 #define RPIN_LED 2
-#define RPIN_GREENLED 5
 #define RPIN_RELAY1 16
+#define RPIN_GREENLED 5
 #define RBUTTON_1 4
 
-// constants initialization
+/* constants initialization */
 const char SUBJECT[] = "Thermostat info";
 const int SYNC_INTERVAL = (10 * 60);
 
-// variable initialization
+/* variable initialization */
 int ledValue = 255;
 int ledValue2 = 255;
 String fullip = "";
@@ -45,40 +51,45 @@ String body = "";
 bool ledGreen = LOW;
 bool blink = LOW;
 
-// blynk timer, button and RTC initialization
+/* blynk timer, button and RTC initialization */
 BlynkTimer timer;
-WidgetRTC rtc;
 Button button = Button();
+WidgetRTC rtc;
 
-// declaration of functions
-void mailme(const String body);
+/* declaration of functions */
 int myled(const bool value);
+int toggleLed(bool state, int led, int vpin);
+void mailme(const String body);
 void myTimerEvent();
-int toggleLed(bool state, int led);
 
-// perform actions after connected to blynk server
+/* perform actions after connected to blynk server */
 BLYNK_CONNECTED()
 {
   Blynk.syncAll(); // sync all
-  // Blynk.syncVirtual(V0); // sync V0
+  // Blynk.syncVirtual(V0); // FIXME sync only V0
   rtc.begin();
 }
 
 void setup()
 {
   // Serial.begin(115200); // Debug console
+  /* set modes and initial values for board pins */
   pinMode(RPIN_LED, OUTPUT);
   pinMode(RPIN_RELAY1, OUTPUT);
   pinMode(RPIN_GREENLED, OUTPUT);
   digitalWrite(RPIN_GREENLED, ledGreen);
+  /* setup connection to blynk server */
   Blynk.begin(MYAUTH, MYSSID, MYPASS);
-  timer.setInterval(1000L, myTimerEvent);
+  /* get board ip address and send in email */
   IPAddress myip = WiFi.localIP();
   fullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
   body = "Thermostat started. IP address: " + fullip;
   mailme(body);
+  /* define execution frequency of myTimerEvent */
+  timer.setInterval(1000L, myTimerEvent);
+  /* set sync interval for time synchronization */
   setSyncInterval(SYNC_INTERVAL);
-  // button
+  /* green button */
   button.attach(RBUTTON_1, INPUT);
   button.interval(50);
   button.setPressedState(HIGH);
@@ -86,8 +97,10 @@ void setup()
 
 void loop()
 {
+  /* begin Blynk and Blynk timer */
   Blynk.run();
   timer.run();
+  /* handle button pressing */
   button.update();
   if (button.pressed())
   {
@@ -95,19 +108,19 @@ void loop()
   }
 }
 
-// send email
+/* send email */
 void mailme(const String body)
 {
   Blynk.email(MYMAIL, SUBJECT, body);
 }
 
-// push board uptime to blynk
+/* push board uptime to blynk */
 BLYNK_READ(VPIN_UPTIME)
 {
-  Blynk.virtualWrite(VPIN_UPTIME, millis() / 1000); // Arduino's uptime
+  Blynk.virtualWrite(VPIN_UPTIME, millis() / 1000); // Arduino's uptime, in seconds
 }
 
-// push board time to blynk
+/* push board time to blynk */
 BLYNK_READ(VPIN_TIME)
 {
   String time = String(hour()) + ":" + minute() + ":" + second();
@@ -115,7 +128,7 @@ BLYNK_READ(VPIN_TIME)
   Blynk.virtualWrite(VPIN_TIME, date + " " + time); // Arduino's current time
 }
 
-// built in led
+/* built in led */
 BLYNK_WRITE(VPIN_BUTTON)
 {
   int pinValue = param.asInt();
@@ -123,7 +136,7 @@ BLYNK_WRITE(VPIN_BUTTON)
   ledValue = myled(pinValue);
 }
 
-// relay 1
+/* relay red */
 BLYNK_WRITE(VPIN_BUTTON2)
 {
   int pinValue = param.asInt();
@@ -131,7 +144,7 @@ BLYNK_WRITE(VPIN_BUTTON2)
   ledValue2 = myled(pinValue);
 }
 
-// convert 1 to 255 and 0 to 0 for leds
+/* convert HIGH to 0 and LOW to 255 for leds */
 int myled(const bool value)
 {
   int ledvalue;
@@ -146,29 +159,31 @@ int myled(const bool value)
   return ledvalue;
 }
 
-// push led data to blynk
+/* push led data to blynk */
+/* Please don't send more that 10 values per second */
 void myTimerEvent()
 {
-  Blynk.virtualWrite(VPIN_LED, ledValue); // Please don't send more that 10 values per second.
+  Blynk.virtualWrite(VPIN_LED, ledValue);
   Blynk.virtualWrite(VPIN_LED2, ledValue2);
   if (ledGreen == HIGH)
   {
-    blink = toggleLed(blink, RPIN_GREENLED);
+    blink = toggleLed(blink, RPIN_GREENLED, VPIN_GREEN);
   }
   else
   {
-    blink = LOW;
-    digitalWrite(RPIN_GREENLED, blink);
-    Blynk.virtualWrite(VPIN_GREEN, myled(HIGH));
+    blink = toggleLed(HIGH, RPIN_GREENLED, VPIN_GREEN); // BUG check this
+    //  blink = LOW;
+    //  digitalWrite(RPIN_GREENLED, blink);
+    //  Blynk.virtualWrite(VPIN_GREEN, myled(HIGH));
   }
   
 }
 
-// toggle led state
-int toggleLed(bool state, int led)
+/* toggle led state */
+int toggleLed(bool state, int led, int vpin)
 { 
   state = state ? LOW : HIGH;
   digitalWrite(led, state);
-  Blynk.virtualWrite(VPIN_GREEN, myled(state));
+  Blynk.virtualWrite(vpin, myled(state));
   return state;
 }
