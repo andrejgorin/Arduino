@@ -9,7 +9,7 @@
 #include <WidgetRTC.h>
 
 // where my sensitive info stored - MAIL, AUTH, SSID, PASS
-#include <MyCredentials.h>
+#include "MyCredentials.h" 
 
 // section to add your sensitive settings
 const char *MYMAIL = MAIL;
