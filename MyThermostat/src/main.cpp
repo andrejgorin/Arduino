@@ -181,7 +181,7 @@ void myTimerEvent()
 /* toggle led state */
 int toggleLed(bool state, int led, int vpin)
 {
-  state = state ? LOW : HIGH;
+  state = state ? LOW : HIGH; // HACK just test
   digitalWrite(led, state);
   Blynk.virtualWrite(vpin, myled(state));
   return state;
