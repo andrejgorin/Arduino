@@ -167,7 +167,7 @@ void myTimerEvent()
   Blynk.virtualWrite(VPIN_LED2, ledValue2);
   if (ledGreen == HIGH)
   {
-    blink = toggleLed(blink, RPIN_GREENLED, VPIN_GREEN);
+    blink = toggleLed(blink, RPIN_GREENLED, VPIN_GREEN); // XXX just test
   }
   else
   {
