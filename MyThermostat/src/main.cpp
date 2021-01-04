@@ -32,6 +32,7 @@ const char *MYPASS = PASS;
 #define VPIN_BUTTON2 V1
 #define VPIN_TIME V6
 #define VPIN_GREEN V11
+#define VPIN_GREENBUTTON V10
 
 /* real pins defined */
 #define RPIN_LED 2
@@ -105,6 +106,7 @@ void loop()
   if (button.pressed())
   {
     ledGreen = !ledGreen;
+    Blynk.virtualWrite(VPIN_GREENBUTTON, ledGreen);
   }
 }
 
@@ -144,6 +146,16 @@ BLYNK_WRITE(VPIN_BUTTON2)
   ledValue2 = myled(pinValue);
 }
 
+/* green button */
+BLYNK_WRITE(VPIN_GREENBUTTON)
+{
+  int pinValue = param.asInt();
+  if (pinValue != ledGreen)
+  {
+    ledGreen = !ledGreen;
+  }
+}
+
 /* convert HIGH to 0 and LOW to 255 for leds */
 int myled(const bool value)
 {
@@ -171,10 +183,7 @@ void myTimerEvent()
   }
   else
   {
-    blink = toggleLed(HIGH, RPIN_GREENLED, VPIN_GREEN); // BUG check this
-    //  blink = LOW;
-    //  digitalWrite(RPIN_GREENLED, blink);
-    //  Blynk.virtualWrite(VPIN_GREEN, myled(HIGH));
+    blink = toggleLed(HIGH, RPIN_GREENLED, VPIN_GREEN); // BUG just test
   }
 }
 
@@ -183,6 +192,6 @@ int toggleLed(bool state, int led, int vpin)
 {
   state = state ? LOW : HIGH; // HACK just test
   digitalWrite(led, state);
-  Blynk.virtualWrite(vpin, myled(state));
+  Blynk.virtualWrite(vpin, myled(!state));
   return state;
 }
