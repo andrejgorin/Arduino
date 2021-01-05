@@ -17,10 +17,10 @@ const char *MYPASS = PASS;
 struct element
 {
   bool state;
-  int vbutton;
-  int rbutton;
-  int vled;
-  int rled;
+  int v_trigger;
+  int r_trigger;
+  int v_executor;
+  int r_executor;
 };
 
 /* perform actions after connected to blynk server */
