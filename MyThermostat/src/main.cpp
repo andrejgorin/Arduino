@@ -196,4 +196,14 @@ int toggleLed(bool state, int led, int vpin)
   return state;
 }
 
-/* TODO cpp struct for all related variables */
+/* TODO cpp struct for all related variables
+struct element {
+  bool state;
+  int vbutton;
+  int rbutton;
+  int vled;
+  int rled;
+} ;
+
+element Yellow;
+*/
