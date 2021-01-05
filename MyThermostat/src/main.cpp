@@ -195,3 +195,5 @@ int toggleLed(bool state, int led, int vpin)
   Blynk.virtualWrite(vpin, myled(!state));
   return state;
 }
+
+/* TODO cpp struct for all related variables */
