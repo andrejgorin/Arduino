@@ -12,9 +12,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
-#include <TimeLib.h>
-#include <WidgetRTC.h>
-#include <Bounce2.h>
 
 /* where my sensitive info stored - MAIL, AUTH, SSID, PASS */
 #include "MyCredentials.h"
@@ -26,9 +23,8 @@ const char *MYSSID = SSID;
 const char *MYPASS = PASS;
 
 /* declaration of functions */
-
-/* check if WiFi is connected */
-bool checkWiFi();
+/* check if WiFi connected and write result to real pin */
+void isWifi();
 
 /* example of some struct element */
 struct element // TODO not used now
@@ -48,6 +44,11 @@ struct blueLedOnBoard
 
 blueLedOnBoard bLOB;
 
+/* initializations */
+
+/* Blynk timer */
+BlynkTimer timer;
+
 /* perform actions after connected to blynk server */
 BLYNK_CONNECTED()
 {
@@ -62,17 +63,20 @@ void setup()
 
   /* setup connection to blynk server */
   Blynk.begin(MYAUTH, MYSSID, MYPASS);
+
+  /* perform periodic check */
+  timer.setInterval(1000, isWifi);
 }
 
 void loop()
 {
   /* begin Blynk */
   Blynk.run();
-  digitalWrite(bLOB.r_executor, checkWiFi());
+  timer.run();
 }
 
-/* check if WiFi is connected */
-bool checkWiFi()
+/* check if WiFi connected and write result to real pin */
+void isWifi()
 {
-  return !Blynk.connected();
+  digitalWrite(bLOB.r_executor, !Blynk.connected());
 }
