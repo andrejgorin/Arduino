@@ -1,3 +1,4 @@
+/* This code example taken from http://www.electronoobs.com/eng_arduino_tut24.php */
 /*    Max6675 Module  ==>   Arduino
  *    CS              ==>     D10
  *    SO              ==>     D12
