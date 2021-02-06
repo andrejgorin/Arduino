@@ -9,7 +9,11 @@ void setup()
 
   Serial.begin(115200); //Starts serial connection
   rtcObject.Begin();    //Starts I2C
-  /* uncomment to setup time
+  /* uncomment to set time by compile time
+  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+  rtcObject.SetDateTime(compiled);
+  */
+  /* uncomment to setup time manually
   RtcDateTime currentTime = RtcDateTime(21, 02, 06, 16, 30, 0); //define date and time object
   rtcObject.SetDateTime(currentTime);                           //configure the RTC with object
   */
@@ -32,6 +36,5 @@ void loop()
   );
 
   Serial.println(str); //print the string to the serial port
-
-  delay(20000); //20 seconds delay
+  delay(5000);         //5 seconds delay
 }
