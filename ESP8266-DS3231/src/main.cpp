@@ -1,42 +1,86 @@
 #include <Arduino.h>
-#include <Wire.h>      //I2C library
-#include <RtcDS3231.h> //RTC library
+#include "RTClib.h"
 
-RtcDS3231<TwoWire> rtcObject(Wire); // for version 2.0.0 of the rtc library
+RTC_DS3231 rtc;
 
-void setup()
-{
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
-  Serial.begin(115200); //Starts serial connection
-  rtcObject.Begin();    //Starts I2C
-  /* uncomment to set time by compile time
-  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-  rtcObject.SetDateTime(compiled);
-  */
-  /* uncomment to setup time manually
-  RtcDateTime currentTime = RtcDateTime(21, 02, 06, 16, 30, 0); //define date and time object
-  rtcObject.SetDateTime(currentTime);                           //configure the RTC with object
-  */
+void setup () {
+  Serial.begin(115200);
+
+#ifndef ESP8266
+  while (!Serial); // wait for serial port to connect. Needed for native USB
+#endif
+
+  if (! rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    Serial.flush();
+    abort();
+  }
+
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, let's set the time!");
+    // When time needs to be set on a new device, or after a power loss, the
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
+
+  // When time needs to be re-set on a previously configured device, the
+  // following line sets the RTC to the date & time this sketch was compiled
+  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  // This line sets the RTC with an explicit date & time, for example to set
+  // January 21, 2014 at 3am you would call:
+  // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 }
 
-void loop()
-{
+void loop () {
+    DateTime now = rtc.now();
 
-  RtcDateTime currentTime = rtcObject.GetDateTime(); //get the time from the RTC
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.day(), DEC);
+    Serial.print(" (");
+    Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+    Serial.print(") ");
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.print(now.second(), DEC);
+    Serial.println();
 
-  char str[20]; //declare a string as an array of chars
+    Serial.print(" since midnight 1/1/1970 = ");
+    Serial.print(now.unixtime());
+    Serial.print("s = ");
+    Serial.print(now.unixtime() / 86400L);
+    Serial.println("d");
 
-  sprintf(str, "%d/%d/%d %d:%d:%d", //%d allows to print an integer to the string
-          currentTime.Year(),       //get year method
-          currentTime.Month(),      //get month method
-          currentTime.Day(),        //get day method
-          currentTime.Hour(),       //get hour method
-          currentTime.Minute(),     //get minute method
-          currentTime.Second()      //get second method
-  );
+    // calculate a date which is 7 days, 12 hours, 30 minutes, 6 seconds into the future
+    DateTime future (now + TimeSpan(7,12,30,6));
 
-  Serial.println(str);                              //print the string to the serial port
-  RtcTemperature temp = rtcObject.GetTemperature(); //  Get the temperature data
-  Serial.println(temp.AsFloatDegC());
-  delay(5000); //5 seconds delay
+    Serial.print(" now + 7d + 12h + 30m + 6s: ");
+    Serial.print(future.year(), DEC);
+    Serial.print('/');
+    Serial.print(future.month(), DEC);
+    Serial.print('/');
+    Serial.print(future.day(), DEC);
+    Serial.print(' ');
+    Serial.print(future.hour(), DEC);
+    Serial.print(':');
+    Serial.print(future.minute(), DEC);
+    Serial.print(':');
+    Serial.print(future.second(), DEC);
+    Serial.println();
+
+    Serial.print("Temperature: ");
+    Serial.print(rtc.getTemperature());
+    Serial.println(" C");
+
+    Serial.println();
+    delay(3000);
 }
