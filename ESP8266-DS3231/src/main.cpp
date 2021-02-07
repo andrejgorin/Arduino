@@ -9,9 +9,9 @@ void setup()
 
   Serial.begin(115200); //Starts serial connection
   rtcObject.Begin();    //Starts I2C
-  /* uncomment to set time by compile time
   RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
   rtcObject.SetDateTime(compiled);
+  /* uncomment to set time by compile time
   */
   /* uncomment to setup time manually
   RtcDateTime currentTime = RtcDateTime(21, 02, 06, 16, 30, 0); //define date and time object
@@ -35,6 +35,8 @@ void loop()
           currentTime.Second()      //get second method
   );
 
-  Serial.println(str); //print the string to the serial port
-  delay(5000);         //5 seconds delay
+  Serial.println(str);                              //print the string to the serial port
+  RtcTemperature temp = rtcObject.GetTemperature(); //  Get the temperature data
+  Serial.println(temp.AsFloatDegC());
+  delay(5000); //5 seconds delay
 }
