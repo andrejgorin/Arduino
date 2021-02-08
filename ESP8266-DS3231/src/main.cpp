@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "RTClib.h"
+#include <RTClib.h>
 #include <LiquidCrystal_I2C.h>
 
 // set the LCD number of columns and rows
