@@ -24,7 +24,7 @@ const byte lcdRows = 4;
 //initiate lcd
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 
-// variables
+// to convert int to name of day of week
 char daysOfTheWeek[7][10] = {"Sunday",
                              "Monday",
                              "Tuesday",
