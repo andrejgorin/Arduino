@@ -6,22 +6,25 @@
 // DS18B20 plugged into GPIO13
 #define ONE_WIRE_BUS 13
 
-// set the LCD number of columns and rows
-int lcdColumns = 20;
-int lcdRows = 4;
-
-// initiate oneWire
+// initiate oneWire for DS18B20
 OneWire oneWire(ONE_WIRE_BUS);
+// Pass oneWire reference to Dallas Temperature
+DallasTemperature sensors(&oneWire);
+// address of DS18B20 in bedroom
+uint8_t sensorBedroom[8] = {0x28, 0x31, 0x94, 0x19, 0x51, 0x20, 0x01, 0x88};
+// resolution of DS18B20
+const byte resolution = 9;
+
 // initiate rtc
 RTC_DS3231 rtc;
+
+// set the LCD number of columns and rows
+const byte lcdColumns = 20;
+const byte lcdRows = 4;
 //initiate lcd
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
-
 // variables
-uint8_t sensorBedroom[8] = {0x28, 0x31, 0x94, 0x19, 0x51, 0x20, 0x01, 0x88};
 char daysOfTheWeek[7][10] = {"Sunday",
                              "Monday",
                              "Tuesday",
@@ -29,22 +32,30 @@ char daysOfTheWeek[7][10] = {"Sunday",
                              "Thursday",
                              "Friday",
                              "Saturday"};
-char myTemp[20];
-char tempBuffer[8];
-char city[] = "Ogre, LV";
-char myTime[20];
-unsigned long timing;
+
+char city[] = "Ogre, LV"; // first row on LCD
+char myTime[20];          // second row on LCD
+char myTemp[20];          // fourth row on LCD
+
+const unsigned int serialSpeed = 115200; // speed of serial connection
+
+unsigned long timing1 = 0;            // for timePeriod
+const unsigned int timePeriod = 500;  // how often check time
+unsigned long timing2 = 0;            // for tempPeriod
+const unsigned int tempPeriod = 5000; // how often check temperature
 
 // declare functions
 void centerLCD(int row, char text[]);
-float myTemperature(DeviceAddress deviceAddress);
+int myTemperature(DeviceAddress deviceAddress);
 
 void setup()
 {
   // initiate serial communication
-  Serial.begin(115200);
+  Serial.begin(serialSpeed);
   // initiate DS18B20
   sensors.begin();
+  // set resolution of DS18B20 to minimum
+  sensors.setResolution(sensorBedroom, resolution);
   // initialize LCD
   lcd.init();
   // turn on LCD backlight
@@ -78,27 +89,28 @@ void setup()
 
 void loop()
 {
-  if (millis() - timing > 500)
+  if (millis() - timing1 > timePeriod)
   {
-  DateTime now = rtc.now();
-  // lcd.clear();
-  centerLCD(0, city);
-  sprintf(myTime,
-          "%i/%02i/%02i %02i:%02i",
-          now.year(),
-          now.month(),
-          now.day(),
-          now.hour(),
-          now.minute());
-  centerLCD(1, myTime);
-  centerLCD(2, daysOfTheWeek[now.dayOfTheWeek()]);
-  if (millis() - timing > 5000)
-  {
-  sensors.requestTemperatures();
-  }
-  dtostrf(myTemperature(sensorBedroom), 5, 2, tempBuffer);
-  sprintf(myTemp, "Temp: %s C", tempBuffer);
-  centerLCD(3, myTemp);
+    timing1 = millis();
+    DateTime now = rtc.now();
+    centerLCD(0, city);
+    sprintf(myTime,
+            "%i/%02i/%02i %02i:%02i:%02i",
+            now.year(),
+            now.month(),
+            now.day(),
+            now.hour(),
+            now.minute(),
+            now.second());
+    centerLCD(1, myTime);
+    centerLCD(2, daysOfTheWeek[now.dayOfTheWeek()]);
+    if (millis() - timing2 > tempPeriod)
+    {
+      timing2 = millis();
+      sensors.requestTemperatures();
+    }
+    sprintf(myTemp, "Temp: %i C", myTemperature(sensorBedroom));
+    centerLCD(3, myTemp);
   }
 }
 
@@ -106,22 +118,24 @@ void centerLCD(int row, char text[])
 {
   int prefix;
   int postfix;
+  const char space[] = " ";
   lcd.setCursor(0, row);
   prefix = (lcdColumns - strlen(text)) / 2;
   for (int i = 0; i < prefix; i++)
   {
-    lcd.print(" ");
+    lcd.print(space);
   }
   lcd.print(text);
   postfix = lcdColumns - prefix - strlen(text);
   for (int i = 0; i < postfix; i++)
   {
-    lcd.print(" ");
+    lcd.print(space);
   }
 }
 
-float myTemperature(DeviceAddress deviceAddress)
+int myTemperature(DeviceAddress deviceAddress)
 {
   float tempC = sensors.getTempC(deviceAddress);
-  return tempC;
+  int y = round(tempC);
+  return y;
 }
