@@ -226,6 +226,7 @@ void checkResponse(int code)
   else
   {
     Serial.println("Problem writing to channel. HTTP error code " + String(code));
+    WiFi.begin(MYSSID, MYPASS);
   }
 }
 
