@@ -10,6 +10,7 @@
 #include <RTClib.h>
 #include <LiquidCrystal_I2C.h>
 #include <DallasTemperature.h>
+#include <TaskScheduler.h>
 #include "MyCredentials.h"
 
 /* wifi stuff */
@@ -51,23 +52,24 @@ char myTime[20];                          // second row on LCD
 char myTemp[20];                          // fourth row on LCD
 
 /* speed of serial connection */
-const unsigned int serialSpeed = 9600; 
+const unsigned int serialSpeed = 9600;
 
-long timing1 = 0;              // for timePeriod
-const int timePeriod = 500;    // how often check time
-long timing2 = 0;              // for tempPeriod
-const int tempPeriod = 5000;   // how often check temperature
-long timing3 = 0;              // for thingPeriod
-const int thingPeriod = 60000; // how often send data to ThingSpeak
-
-/* declare functions */
-void centerLCD(int row, char text[]);
-int myTemperature(DeviceAddress deviceAddress);
-void myWiFi();
+/* declare functions in loop */
 void myLCD();
 void myThingSpeak();
-void checkResponse(int code);
 void myLCDTimer();
+
+/* declare helper functions */
+void centerLCD(int row, char text[]);
+int myTemperature(DeviceAddress deviceAddress);
+void checkResponse(int code);
+void myWiFi(); // FIXME
+
+/* Task Scheduler stuff */
+Scheduler ts;
+Task t1(TASK_SECOND, TASK_FOREVER, &myLCD, &ts, true);
+Task t2(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak, &ts, true);
+Task t3(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer, &ts, true);
 
 void setup()
 {
@@ -123,10 +125,8 @@ void setup()
 void loop()
 {
   now = rtc.now();
-  myLCD();
+  ts.execute();
   // myWiFi();
-  myThingSpeak();
-  myLCDTimer();
 }
 
 /* function to place text in center of LCD row */
@@ -178,42 +178,30 @@ void myWiFi()
 /* function to print all necessary info on LCD */
 void myLCD()
 {
-  if (millis() - timing1 > timePeriod)
-  {
-    timing1 = millis();
-    centerLCD(0, city);
-    sprintf(myTime,
-            "%i/%02i/%02i %02i:%02i:%02i",
-            now.year(),
-            now.month(),
-            now.day(),
-            now.hour(),
-            now.minute(),
-            now.second());
-    centerLCD(1, myTime);
-    centerLCD(2, daysOfTheWeek[now.dayOfTheWeek()]);
-    if (millis() - timing2 > tempPeriod)
-    {
-      timing2 = millis();
-      sensors.requestTemperatures();
-    }
-    sprintf(myTemp, "Temp: %i C", myTemperature(sensorBedroom));
-    centerLCD(3, myTemp);
-  }
+  centerLCD(0, city);
+  sprintf(myTime,
+          "%i/%02i/%02i %02i:%02i:%02i",
+          now.year(),
+          now.month(),
+          now.day(),
+          now.hour(),
+          now.minute(),
+          now.second());
+  centerLCD(1, myTime);
+  centerLCD(2, daysOfTheWeek[now.dayOfTheWeek()]);
+  sensors.requestTemperatures();
+  sprintf(myTemp, "Temp: %i C", myTemperature(sensorBedroom));
+  centerLCD(3, myTemp);
 }
 
 /* function to send data to ThingSpeak */
 void myThingSpeak()
 {
-  if (millis() - timing3 > thingPeriod)
-  {
-    timing3 = millis();
-    int data = myTemperature(sensorBedroom);
-    ThingSpeak.setField(1, data);                                    // Write value to a ThingSpeak Channel Field1
-    ThingSpeak.setStatus(String("Last updated: ") + String(myTime)); // Write status to a ThingSpeak Channel
-    int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
-    checkResponse(httpCode);
-  }
+  int data = myTemperature(sensorBedroom);
+  ThingSpeak.setField(1, data);                                    // Write value to a ThingSpeak Channel Field1
+  ThingSpeak.setStatus(String("Last updated: ") + String(myTime)); // Write status to a ThingSpeak Channel
+  int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+  checkResponse(httpCode);
 }
 
 /* function to check http response code from ThingSpeak. OK if 200, NOK in any other case */
