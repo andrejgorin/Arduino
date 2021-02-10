@@ -1,10 +1,11 @@
 /* Clock, calendar and thermometer.
  * Sends temperature data to ThingSpeak.
+ * Based on ESP8266 chip.
  */
 
 /* libaries and files to include */
 #include <Arduino.h>
-#include "ThingSpeak.h"
+#include <ThingSpeak.h>
 #include <ESP8266WiFi.h>
 #include <RTClib.h>
 #include <LiquidCrystal_I2C.h>
@@ -29,26 +30,28 @@ const byte resolution = 9;                                                   // 
 
 /* initiate rtc */
 RTC_DS3231 rtc;
+DateTime now;
 
 /* LCD screen part */
 const byte lcdColumns = 20;                       // set number of columns of the LCD
 const byte lcdRows = 4;                           // set number of rows of the LCD
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //initiate lcd
-
-/* to convert int to name of day of week */
+const byte lcdOn = 6;
+const byte lcdOff = 22;
+bool lcdState = true;
 char daysOfTheWeek[7][10] = {"Sunday",
                              "Monday",
                              "Tuesday",
                              "Wednesday",
                              "Thursday",
                              "Friday",
-                             "Saturday"};
+                             "Saturday"}; // to convert int to name of day of week
+char city[] = "Ogre, LV";                 // first row on LCD
+char myTime[20];                          // second row on LCD
+char myTemp[20];                          // fourth row on LCD
 
-char city[] = "Ogre, LV"; // first row on LCD
-char myTime[20];          // second row on LCD
-char myTemp[20];          // fourth row on LCD
-
-const unsigned int serialSpeed = 9600; // speed of serial connection
+/* speed of serial connection */
+const unsigned int serialSpeed = 9600; 
 
 long timing1 = 0;              // for timePeriod
 const int timePeriod = 500;    // how often check time
@@ -64,6 +67,7 @@ void myWiFi();
 void myLCD();
 void myThingSpeak();
 void checkResponse(int code);
+void myLCDTimer();
 
 void setup()
 {
@@ -118,9 +122,11 @@ void setup()
 
 void loop()
 {
+  now = rtc.now();
   myLCD();
   // myWiFi();
   myThingSpeak();
+  myLCDTimer();
 }
 
 /* function to place text in center of LCD row */
@@ -147,8 +153,8 @@ void centerLCD(int row, char text[])
 int myTemperature(DeviceAddress deviceAddress)
 {
   float tempC = sensors.getTempC(deviceAddress);
-  int y = round(tempC);
-  return y;
+  int intTemp = round(tempC);
+  return intTemp;
 }
 
 /* function to check if WiFi is connected and try to connect if not */
@@ -175,7 +181,6 @@ void myLCD()
   if (millis() - timing1 > timePeriod)
   {
     timing1 = millis();
-    DateTime now = rtc.now();
     centerLCD(0, city);
     sprintf(myTime,
             "%i/%02i/%02i %02i:%02i:%02i",
@@ -221,5 +226,23 @@ void checkResponse(int code)
   else
   {
     Serial.println("Problem writing to channel. HTTP error code " + String(code));
+  }
+}
+
+/* function to turn lcd backlight on or off by timer */
+void myLCDTimer()
+{
+  const byte lcdOn = 6;
+  const byte lcdOff = 22;
+  int myHour = now.hour();
+  if (myHour == lcdOn && !lcdState)
+  {
+    lcd.backlight();
+    lcdState = !lcdState;
+  }
+  if (myHour == lcdOff && lcdState)
+  {
+    lcd.noBacklight();
+    lcdState = !lcdState;
   }
 }
