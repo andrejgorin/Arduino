@@ -1,15 +1,19 @@
 #include <Arduino.h>
+#include "ThingSpeak.h"
+#include <ESP8266WiFi.h>
 #include <RTClib.h>
 #include <LiquidCrystal_I2C.h>
 #include <DallasTemperature.h>
+#include "MyCredentials.h"
 
-// const char *MYSSID = SSID; // your network SSID (name)
-// const char *MYPASS = PASS; // your network password
-// WiFiClient client;       // initialize wifi
+// wifi stuff
+const char *MYSSID = SSID; // your network SSID (name)
+const char *MYPASS = PASS; // your network password
+WiFiClient client;         // initialize wifi
 
 // API key for ThingSpeak
-// const char *myWriteAPIKey = T_AUTH;
-// unsigned long myChannelNumber = SECRET_CH_ID;
+const char *myWriteAPIKey = T_AUTH;
+const unsigned long myChannelNumber = SECRET_CH_ID;
 
 // DS18B20 plugged into GPIO13
 #define ONE_WIRE_BUS 13
@@ -45,7 +49,7 @@ char city[] = "Ogre, LV"; // first row on LCD
 char myTime[20];          // second row on LCD
 char myTemp[20];          // fourth row on LCD
 
-const unsigned int serialSpeed = 115200; // speed of serial connection
+const unsigned int serialSpeed = 9600; // speed of serial connection
 
 long timing1 = 0;              // for timePeriod
 const int timePeriod = 500;    // how often check time
@@ -57,9 +61,10 @@ const int thingPeriod = 60000; // how often check temperature
 // declare functions
 void centerLCD(int row, char text[]);
 int myTemperature(DeviceAddress deviceAddress);
-//void myWiFi();
+void myWiFi();
 void myLCD();
-//void myThingSpeak();
+void myThingSpeak();
+void checkResponse(int code);
 
 void setup()
 {
@@ -100,15 +105,16 @@ void setup()
   // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 
   // initialize thingspeak
-  //WiFi.mode(WIFI_STA);
-  //ThingSpeak.begin(client);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(MYSSID, MYPASS);
+  ThingSpeak.begin(client);
 }
 
 void loop()
 {
-  //myWiFi();
   myLCD();
-  //myThingSpeak();
+  // myWiFi();
+  myThingSpeak();
 }
 
 void centerLCD(int row, char text[])
@@ -137,14 +143,13 @@ int myTemperature(DeviceAddress deviceAddress)
   return y;
 }
 
-/*
 void myWiFi()
 {
-  if (WiFi.status() != WL_CONNECTED)
+  if (WiFi.isConnected() != true)
   {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(MYSSID);
-    while (WiFi.status() != WL_CONNECTED)
+    while (WiFi.isConnected() != true)
     {
       WiFi.begin(MYSSID, MYPASS); // Connect to WPA/WPA2 network
       Serial.print(".");
@@ -153,7 +158,6 @@ void myWiFi()
     Serial.println("\nConnected.");
   }
 }
-*/
 
 void myLCD()
 {
@@ -182,24 +186,28 @@ void myLCD()
   }
 }
 
-/*
 void myThingSpeak()
 {
   if (millis() - timing3 > thingPeriod)
   {
     timing3 = millis();
     int data = myTemperature(sensorBedroom);
-    // Write value to Field 1 of a ThingSpeak Channel
-    int httpCode = ThingSpeak.writeField(myChannelNumber, 1, data, myWriteAPIKey);
-
-    if (httpCode == 200)
-    {
-      Serial.println("Channel write successful.");
-    }
-    else
-    {
-      Serial.println("Problem writing to channel. HTTP error code " + String(httpCode));
-    }
+    // Write value to a ThingSpeak Channel
+    ThingSpeak.setField(1, data);
+    ThingSpeak.setStatus(String("Last updated: ") + String(myTime));
+    int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+    checkResponse(httpCode);
   }
 }
-*/
+
+void checkResponse(int code)
+{
+  if (code == 200)
+  {
+    Serial.println("Channel write successful.");
+  }
+  else
+  {
+    Serial.println("Problem writing to channel. HTTP error code " + String(code));
+  }
+}
