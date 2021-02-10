@@ -1,3 +1,6 @@
+/*
+
+/* libaries and files to include */
 #include <Arduino.h>
 #include "ThingSpeak.h"
 #include <ESP8266WiFi.h>
@@ -6,37 +9,31 @@
 #include <DallasTemperature.h>
 #include "MyCredentials.h"
 
-// wifi stuff
-const char *MYSSID = SSID; // your network SSID (name)
-const char *MYPASS = PASS; // your network password
+/* wifi stuff */
+const char *MYSSID = SSID; // network SSID (name)
+const char *MYPASS = PASS; // network password
 WiFiClient client;         // initialize wifi
 
-// API key for ThingSpeak
-const char *myWriteAPIKey = T_AUTH;
-const unsigned long myChannelNumber = SECRET_CH_ID;
+/* ThingSpeak stuff */
+const char *myWriteAPIKey = T_AUTH;                 // api key for ThingSpeak
+const unsigned long myChannelNumber = SECRET_CH_ID; // channel id for ThingSpeak
 
-// DS18B20 plugged into GPIO13
-#define ONE_WIRE_BUS 13
+/* DS18B20 part */
+#define ONE_WIRE_BUS 13                                                      // DS18B20 plugged into GPIO13
+OneWire oneWire(ONE_WIRE_BUS);                                               // initiate oneWire for DS18B20
+DallasTemperature sensors(&oneWire);                                         // Pass oneWire reference to Dallas Temperature
+uint8_t sensorBedroom[8] = {0x28, 0x31, 0x94, 0x19, 0x51, 0x20, 0x01, 0x88}; // address of DS18B20 in bedroom
+const byte resolution = 9;                                                   // resolution of DS18B20
 
-// initiate oneWire for DS18B20
-OneWire oneWire(ONE_WIRE_BUS);
-// Pass oneWire reference to Dallas Temperature
-DallasTemperature sensors(&oneWire);
-// address of DS18B20 in bedroom
-uint8_t sensorBedroom[8] = {0x28, 0x31, 0x94, 0x19, 0x51, 0x20, 0x01, 0x88};
-// resolution of DS18B20
-const byte resolution = 9;
-
-// initiate rtc
+/* initiate rtc */
 RTC_DS3231 rtc;
 
-// set the LCD number of columns and rows
-const byte lcdColumns = 20;
-const byte lcdRows = 4;
-//initiate lcd
-LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
+/* LCD screen part */
+const byte lcdColumns = 20;                       // set number of columns of the LCD
+const byte lcdRows = 4;                           // set number of rows of the LCD
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //initiate lcd
 
-// to convert int to name of day of week
+/* to convert int to name of day of week */
 char daysOfTheWeek[7][10] = {"Sunday",
                              "Monday",
                              "Tuesday",
@@ -55,10 +52,10 @@ long timing1 = 0;              // for timePeriod
 const int timePeriod = 500;    // how often check time
 long timing2 = 0;              // for tempPeriod
 const int tempPeriod = 5000;   // how often check temperature
-long timing3 = 0;              // for tempPeriod
-const int thingPeriod = 60000; // how often check temperature
+long timing3 = 0;              // for thingPeriod
+const int thingPeriod = 60000; // how often send data to ThingSpeak
 
-// declare functions
+/* declare functions */
 void centerLCD(int row, char text[]);
 int myTemperature(DeviceAddress deviceAddress);
 void myWiFi();
@@ -68,16 +65,17 @@ void checkResponse(int code);
 
 void setup()
 {
-  // initiate serial communication
+  /* initiate serial communication */
   Serial.begin(serialSpeed);
-  // initiate DS18B20
+
+  /* initiate DS18B20 */
   sensors.begin();
-  // set resolution of DS18B20 to minimum
-  sensors.setResolution(sensorBedroom, resolution);
-  // initialize LCD
+  sensors.setResolution(sensorBedroom, resolution); // set resolution of DS18B20 to minimum
+
+  /* initiate LCD */
   lcd.init();
-  // turn on LCD backlight
-  lcd.backlight();
+  lcd.backlight(); // turn on LCD backlight
+  //lcd.noBacklight();
 
   if (!rtc.begin())
   {
@@ -86,27 +84,33 @@ void setup()
     abort();
   }
 
+  /* Perform initial checking of RTC */
   if (rtc.lostPower())
   {
     Serial.println("RTC lost power, let's set the time!");
-    // When time needs to be set on a new device, or after a power loss, the
-    // following line sets the RTC to the date & time this sketch was compiled
+    /* When time needs to be set on a new device, or after a power loss, the
+     * following line sets the RTC to the date & time this sketch was compiled
+     */
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+    /* This line sets the RTC with an explicit date & time, for example to set
+     * January 21, 2014 at 3am you would call:
+     */
+    /* rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0)); */
   }
+  /* When time needs to be re-set on a previously configured device, the
+   * following line sets the RTC to the date & time this sketch was compiled
+   */
+  /* rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); */
+  /* This line sets the RTC with an explicit date & time, for example to set
+   * January 21, 2014 at 3am you would call:
+   */
+  /* rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0)); */
 
-  // When time needs to be re-set on a previously configured device, the
-  // following line sets the RTC to the date & time this sketch was compiled
-  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  // This line sets the RTC with an explicit date & time, for example to set
-  // January 21, 2014 at 3am you would call:
-  // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-
-  // initialize thingspeak
+  /* initiate WiFi */
   WiFi.mode(WIFI_STA);
   WiFi.begin(MYSSID, MYPASS);
+
+  /* initialize thingspeak */
   ThingSpeak.begin(client);
 }
 
@@ -117,6 +121,7 @@ void loop()
   myThingSpeak();
 }
 
+/* function to place text in center of LCD row */
 void centerLCD(int row, char text[])
 {
   int prefix;
@@ -136,6 +141,7 @@ void centerLCD(int row, char text[])
   }
 }
 
+/* function to get temperature from DS18B20, round it and convert to integer */
 int myTemperature(DeviceAddress deviceAddress)
 {
   float tempC = sensors.getTempC(deviceAddress);
@@ -143,13 +149,15 @@ int myTemperature(DeviceAddress deviceAddress)
   return y;
 }
 
+/* function to check if WiFi is connected and try to connect if not */
+// TODO refactor this function as it isn't usable now
 void myWiFi()
 {
-  if (WiFi.isConnected() != true)
+  if (WiFi.isConnected() != true) // BUG WiFi.isConnected() doesn't work
   {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(MYSSID);
-    while (WiFi.isConnected() != true)
+    while (WiFi.isConnected() != true) // BUG WiFi.isConnected() doesn't work
     {
       WiFi.begin(MYSSID, MYPASS); // Connect to WPA/WPA2 network
       Serial.print(".");
@@ -159,6 +167,7 @@ void myWiFi()
   }
 }
 
+/* function to print all necessary info on LCD */
 void myLCD()
 {
   if (millis() - timing1 > timePeriod)
@@ -186,20 +195,21 @@ void myLCD()
   }
 }
 
+/* function to send data to ThingSpeak */
 void myThingSpeak()
 {
   if (millis() - timing3 > thingPeriod)
   {
     timing3 = millis();
     int data = myTemperature(sensorBedroom);
-    // Write value to a ThingSpeak Channel
-    ThingSpeak.setField(1, data);
-    ThingSpeak.setStatus(String("Last updated: ") + String(myTime));
+    ThingSpeak.setField(1, data);                                    // Write value to a ThingSpeak Channel Field1
+    ThingSpeak.setStatus(String("Last updated: ") + String(myTime)); // Write status to a ThingSpeak Channel
     int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
     checkResponse(httpCode);
   }
 }
 
+/* function to check http response code from ThingSpeak. OK if 200, NOK in any other case */
 void checkResponse(int code)
 {
   if (code == 200)
