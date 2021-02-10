@@ -1,4 +1,6 @@
-/*
+/* Clock, calendar and thermometer.
+ * Sends temperature data to ThingSpeak.
+ */
 
 /* libaries and files to include */
 #include <Arduino.h>
