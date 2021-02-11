@@ -167,7 +167,7 @@ void myWiFi()
     Serial.println(MYSSID);
     while (WiFi.isConnected() != true) // BUG WiFi.isConnected() doesn't work
     {
-      WiFi.begin(MYSSID, MYPASS); // Connect to WPA/WPA2 network
+      WiFi.reconnect(); // reconnect to WPA/WPA2 network
       Serial.print(".");
       delay(5000);
     }
@@ -214,7 +214,7 @@ void checkResponse(int code)
   else
   {
     Serial.println("Problem writing to channel. HTTP error code " + String(code));
-    WiFi.begin(MYSSID, MYPASS);
+    WiFi.reconnect();
   }
 }
 
