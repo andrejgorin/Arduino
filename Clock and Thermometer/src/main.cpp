@@ -19,7 +19,7 @@
 const char *MYSSID = SSID; // network SSID (name)
 const char *MYPASS = PASS; // network password
 WiFiClient client;         // initialize wifi
-bool myWiFiIsOk = true;   // false if http code from ThingSpeak is not 200
+bool myWiFiIsOk = true;    // false if http code from ThingSpeak is not 200
 
 /***** ThingSpeak stuff *****/
 
