@@ -98,16 +98,12 @@ void setup()
   lcd.init();
   lcd.backlight(); // turn on LCD backlight
 
-  /***** initiate rtc *****/
+  /***** RTC part *****/
 
   rtc.begin();
-
-  /***** Uncomment to set time as compile time *****/
-
+  /* Uncomment to set time as compile time */
   /* rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); */
-
-  /***** Uncomment to set time *****/
-
+  /* Uncomment to set time */
   /* rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0)); */
 
   /***** initiate WiFi *****/
