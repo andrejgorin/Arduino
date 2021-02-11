@@ -3,7 +3,8 @@
  * Based on ESP8266 chip.
  */
 
-/* libaries and files to include */
+/***** libaries and files to include *****/
+
 #include <Arduino.h>
 #include <ThingSpeak.h>
 #include <ESP8266WiFi.h>
@@ -13,27 +14,33 @@
 #include <TaskScheduler.h>
 #include "MyCredentials.h"
 
-/* wifi stuff */
+/***** wifi stuff *****/
+
 const char *MYSSID = SSID; // network SSID (name)
 const char *MYPASS = PASS; // network password
 WiFiClient client;         // initialize wifi
+bool myWiFiIsOk = true;   // false if http code from ThingSpeak is not 200
 
-/* ThingSpeak stuff */
+/***** ThingSpeak stuff *****/
+
 const char *myWriteAPIKey = T_AUTH;                 // api key for ThingSpeak
 const unsigned long myChannelNumber = SECRET_CH_ID; // channel id for ThingSpeak
 
-/* DS18B20 part */
-#define ONE_WIRE_BUS 13                                                      // DS18B20 plugged into GPIO13
+/***** DS18B20 part *****/
+
+const byte ONE_WIRE_BUS = 13;                                                // DS18B20 plugged into GPIO13
 OneWire oneWire(ONE_WIRE_BUS);                                               // initiate oneWire for DS18B20
 DallasTemperature sensors(&oneWire);                                         // Pass oneWire reference to Dallas Temperature
 uint8_t sensorBedroom[8] = {0x28, 0x31, 0x94, 0x19, 0x51, 0x20, 0x01, 0x88}; // address of DS18B20 in bedroom
 const byte resolution = 9;                                                   // resolution of DS18B20
 
-/* initiate rtc */
+/***** initiate rtc *****/
+
 RTC_DS3231 rtc;
 DateTime now;
 
-/* LCD screen part */
+/***** LCD screen part *****/
+
 const byte lcdColumns = 20;                       // set number of columns of the LCD
 const byte lcdRows = 4;                           // set number of rows of the LCD
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //initiate lcd
@@ -48,24 +55,28 @@ char daysOfTheWeek[7][10] = {"Sunday",
                              "Friday",
                              "Saturday"}; // to convert int to name of day of week
 char city[] = "Ogre, LV";                 // first row on LCD
-char myTime[20];                          // second row on LCD
-char myTemp[20];                          // fourth row on LCD
+char fault[] = "No WiFi!";
+char myTime[20]; // second row on LCD
+char myTemp[20]; // fourth row on LCD
 
-/* speed of serial connection */
+/***** speed of serial connection *****/
+
 const unsigned int serialSpeed = 9600;
 
-/* declare functions in loop */
+/***** declare functions in loop *****/
+
 void myLCD();
 void myThingSpeak();
 void myLCDTimer();
 
-/* declare helper functions */
+/***** declare helper functions *****/
+
 void centerLCD(int row, char text[]);
 int myTemperature(DeviceAddress deviceAddress);
 void checkResponse(int code);
-void myWiFi(); // FIXME
 
-/* Task Scheduler stuff */
+/***** Task Scheduler stuff *****/
+
 Scheduler ts;
 Task t1(TASK_SECOND, TASK_FOREVER, &myLCD, &ts, true);
 Task t2(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak, &ts, true);
@@ -73,52 +84,39 @@ Task t3(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer, &ts, true);
 
 void setup()
 {
-  /* initiate serial communication */
+  /***** initiate serial communication *****/
+
   Serial.begin(serialSpeed);
 
-  /* initiate DS18B20 */
+  /***** initiate DS18B20 *****/
+
   sensors.begin();
   sensors.setResolution(sensorBedroom, resolution); // set resolution of DS18B20 to minimum
 
-  /* initiate LCD */
+  /***** initiate LCD *****/
+
   lcd.init();
   lcd.backlight(); // turn on LCD backlight
-  //lcd.noBacklight();
 
-  if (!rtc.begin())
-  {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
-    abort();
-  }
+  /***** initiate rtc *****/
 
-  /* Perform initial checking of RTC */
-  if (rtc.lostPower())
-  {
-    Serial.println("RTC lost power, let's set the time!");
-    /* When time needs to be set on a new device, or after a power loss, the
-     * following line sets the RTC to the date & time this sketch was compiled
-     */
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    /* This line sets the RTC with an explicit date & time, for example to set
-     * January 21, 2014 at 3am you would call:
-     */
-    /* rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0)); */
-  }
-  /* When time needs to be re-set on a previously configured device, the
-   * following line sets the RTC to the date & time this sketch was compiled
-   */
+  rtc.begin();
+
+  /***** Uncomment to set time as compile time *****/
+
   /* rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); */
-  /* This line sets the RTC with an explicit date & time, for example to set
-   * January 21, 2014 at 3am you would call:
-   */
+
+  /***** Uncomment to set time *****/
+
   /* rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0)); */
 
-  /* initiate WiFi */
+  /***** initiate WiFi *****/
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(MYSSID, MYPASS);
 
-  /* initialize thingspeak */
+  /***** initialize thingspeak *****/
+
   ThingSpeak.begin(client);
 }
 
@@ -126,7 +124,6 @@ void loop()
 {
   now = rtc.now();
   ts.execute();
-  // myWiFi();
 }
 
 /* function to place text in center of LCD row */
@@ -157,28 +154,17 @@ int myTemperature(DeviceAddress deviceAddress)
   return intTemp;
 }
 
-/* function to check if WiFi is connected and try to connect if not */
-// TODO refactor this function as it isn't usable now
-void myWiFi()
-{
-  if (WiFi.isConnected() != true) // BUG WiFi.isConnected() doesn't work
-  {
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(MYSSID);
-    while (WiFi.isConnected() != true) // BUG WiFi.isConnected() doesn't work
-    {
-      WiFi.reconnect(); // reconnect to WPA/WPA2 network
-      Serial.print(".");
-      delay(5000);
-    }
-    Serial.println("\nConnected.");
-  }
-}
-
 /* function to print all necessary info on LCD */
 void myLCD()
 {
-  centerLCD(0, city);
+  if (myWiFiIsOk)
+  {
+    centerLCD(0, city);
+  }
+  else
+  {
+    centerLCD(0, fault);
+  }
   sprintf(myTime,
           "%i/%02i/%02i %02i:%02i:%02i",
           now.year(),
@@ -210,11 +196,12 @@ void checkResponse(int code)
   if (code == 200)
   {
     Serial.println("Channel write successful.");
+    myWiFiIsOk = true;
   }
   else
   {
     Serial.println("Problem writing to channel. HTTP error code " + String(code));
-    WiFi.reconnect();
+    myWiFiIsOk = false;
   }
 }
 
