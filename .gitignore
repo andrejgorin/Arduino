@@ -1,0 +1,5 @@
+platformio.code-workspace
+.pio
+.vscode/
+MyCredentials.h
+*.log
