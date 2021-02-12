@@ -18,6 +18,25 @@
 #include <DST_RTC.h>
 #include "MyCredentials.h"
 
+/***** debug option ****/
+
+// #define _DEBUG_
+#ifdef _DEBUG_
+#define SerialD Serial
+#define _PM(a)             \
+  SerialD.print(millis()); \
+  SerialD.print(": ");     \
+  SerialD.println(a)
+#define _PP(a) SerialD.print(a)
+#define _PL(a) SerialD.println(a)
+#define _PX(a) SerialD.println(a, HEX)
+#else
+#define _PM(a)
+#define _PP(a)
+#define _PL(a)
+#define _PX(a)
+#endif
+
 /***** DST part *****/
 
 DST_RTC dst_rtc;
@@ -85,16 +104,19 @@ void myLCDTimer();
 void myThingSpeak();
 void myNTPUpdate();
 void myActivationCallback();
+void myTimeCheck();
 
 /***** declare helper functions *****/
 
 void centerLCD(int row, char text[]);
 int myTemperature(DeviceAddress deviceAddress);
 void checkResponse(int code);
+void printSpace(byte count);
 
 /***** Task Scheduler stuff *****/
 
 Scheduler ts;
+Task t0(100 * TASK_MILLISECOND, TASK_FOREVER, &myTimeCheck);
 Task t1(TASK_SECOND, TASK_FOREVER, &myLCD);
 Task t2(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer);
 Task t3(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak);
@@ -103,9 +125,12 @@ Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
 
 void setup()
 {
-  /***** initiate serial communication *****/
-
-  Serial.begin(serialSpeed); // TODO activate Serial only in debug mode
+/***** initiate serial communication *****/
+#if defined(_DEBUG_)
+  Serial.begin(serialSpeed);
+  delay(2000);
+  _PL("begin: setup()");
+#endif
 
   /***** initiate DS18B20 *****/
 
@@ -136,11 +161,13 @@ void setup()
 
   /***** add all tasks to TaskScheduler and enable *****/
 
+  ts.addTask(t0);
   ts.addTask(t1);
   ts.addTask(t2);
   ts.addTask(t3);
   ts.addTask(t4);
   ts.addTask(t5);
+  t0.enable();
   t1.enable();
   t2.enable();
   t5.enable();
@@ -148,8 +175,13 @@ void setup()
 
 void loop()
 {
-  mNow = rtc.now(); // TODO not to check time every loop
   ts.execute();
+}
+
+/* just tiny peace of code to get current time from DS3231 */
+void myTimeCheck()
+{
+  mNow = rtc.now();
 }
 
 /* function to place text in center of LCD row */
@@ -157,16 +189,19 @@ void centerLCD(int row, char text[])
 {
   int prefix;
   int postfix;
-  const char space[] = " ";
   lcd.setCursor(0, row);
   prefix = (lcdColumns - strlen(text)) / 2;
-  for (int i = 0; i < prefix; i++) // TODO duplicate code, refactor to function
-  {
-    lcd.print(space);
-  }
+  printSpace(prefix);
   lcd.print(text);
   postfix = lcdColumns - prefix - strlen(text);
-  for (int i = 0; i < postfix; i++)
+  printSpace(postfix);
+}
+
+/* function to print " " as much as you need */
+void printSpace(byte count)
+{
+  const char space[] = " ";
+  for (int i = 0; i < count; i++)
   {
     lcd.print(space);
   }
