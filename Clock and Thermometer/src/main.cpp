@@ -78,9 +78,9 @@ void checkResponse(int code);
 /***** Task Scheduler stuff *****/
 
 Scheduler ts;
-Task t1(TASK_SECOND, TASK_FOREVER, &myLCD, &ts, true);
-Task t2(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak, &ts, true);
-Task t3(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer, &ts, true);
+Task t1(TASK_SECOND, TASK_FOREVER, &myLCD);
+Task t2(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer);
+Task t3(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak);
 
 void setup()
 {
@@ -114,6 +114,14 @@ void setup()
   /***** initialize thingspeak *****/
 
   ThingSpeak.begin(client);
+
+  /***** add all tasks to TaskScheduler and enable *****/
+
+  ts.addTask(t1);
+  ts.addTask(t2);
+  ts.addTask(t3);
+  t1.enable();
+  t2.enable();
 }
 
 void loop()
@@ -174,6 +182,10 @@ void myLCD()
   sensors.requestTemperatures();
   sprintf(myTemp, "Temp: %i C", myTemperature(sensorBedroom));
   centerLCD(3, myTemp);
+  if (t1.getRunCounter() == 20)
+  {
+    t3.enable();
+  }
 }
 
 /* function to send data to ThingSpeak */
@@ -207,7 +219,7 @@ void myLCDTimer()
   const byte lcdOn = 6;
   const byte lcdOff = 22;
   int myHour = now.hour();
-  if (myHour == lcdOn && !lcdState)
+  if (myHour == lcdOn && !lcdState) // TODO refactor me
   {
     lcd.backlight();
     lcdState = !lcdState;
