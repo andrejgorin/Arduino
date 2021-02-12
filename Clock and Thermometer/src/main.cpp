@@ -12,7 +12,22 @@
 #include <LiquidCrystal_I2C.h>
 #include <DallasTemperature.h>
 #include <TaskScheduler.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+#include <TimeLib.h>
+#include <DST_RTC.h>
 #include "MyCredentials.h"
+
+/***** DST part *****/
+
+DST_RTC dst_rtc;
+const char rulesDST[] = "EU";
+
+/***** NTP part *****/
+
+WiFiUDP ntpUDP;
+const long utcOffsetInSeconds = 7200;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
 
 /***** wifi stuff *****/
 
@@ -37,7 +52,7 @@ const byte resolution = 9;                                                   // 
 /***** initiate rtc *****/
 
 RTC_DS3231 rtc;
-DateTime now;
+DateTime mNow;
 
 /***** LCD screen part *****/
 
@@ -66,8 +81,10 @@ const unsigned int serialSpeed = 9600;
 /***** declare functions in loop *****/
 
 void myLCD();
-void myThingSpeak();
 void myLCDTimer();
+void myThingSpeak();
+void myNTPUpdate();
+void myActivationCallback();
 
 /***** declare helper functions *****/
 
@@ -81,12 +98,14 @@ Scheduler ts;
 Task t1(TASK_SECOND, TASK_FOREVER, &myLCD);
 Task t2(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer);
 Task t3(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak);
+Task t4(24 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
+Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
 
 void setup()
 {
   /***** initiate serial communication *****/
 
-  Serial.begin(serialSpeed);
+  Serial.begin(serialSpeed); // TODO activate Serial only in debug mode
 
   /***** initiate DS18B20 *****/
 
@@ -101,10 +120,6 @@ void setup()
   /***** RTC part *****/
 
   rtc.begin();
-  /* Uncomment to set time as compile time */
-  /* rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); */
-  /* Uncomment to set time */
-  /* rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0)); */
 
   /***** initiate WiFi *****/
 
@@ -115,18 +130,25 @@ void setup()
 
   ThingSpeak.begin(client);
 
+  /***** initialize NTP *****/
+
+  timeClient.begin();
+
   /***** add all tasks to TaskScheduler and enable *****/
 
   ts.addTask(t1);
   ts.addTask(t2);
   ts.addTask(t3);
+  ts.addTask(t4);
+  ts.addTask(t5);
   t1.enable();
   t2.enable();
+  t5.enable();
 }
 
 void loop()
 {
-  now = rtc.now();
+  mNow = rtc.now(); // TODO not to check time every loop
   ts.execute();
 }
 
@@ -138,7 +160,7 @@ void centerLCD(int row, char text[])
   const char space[] = " ";
   lcd.setCursor(0, row);
   prefix = (lcdColumns - strlen(text)) / 2;
-  for (int i = 0; i < prefix; i++)
+  for (int i = 0; i < prefix; i++) // TODO duplicate code, refactor to function
   {
     lcd.print(space);
   }
@@ -171,21 +193,17 @@ void myLCD()
   }
   sprintf(myTime,
           "%i/%02i/%02i %02i:%02i:%02i",
-          now.year(),
-          now.month(),
-          now.day(),
-          now.hour(),
-          now.minute(),
-          now.second());
+          mNow.year(),
+          mNow.month(),
+          mNow.day(),
+          mNow.hour(),
+          mNow.minute(),
+          mNow.second());
   centerLCD(1, myTime);
-  centerLCD(2, daysOfTheWeek[now.dayOfTheWeek()]);
+  centerLCD(2, daysOfTheWeek[mNow.dayOfTheWeek()]);
   sensors.requestTemperatures();
   sprintf(myTemp, "Temp: %i C", myTemperature(sensorBedroom));
   centerLCD(3, myTemp);
-  if (t1.getRunCounter() == 20)
-  {
-    t3.enable();
-  }
 }
 
 /* function to send data to ThingSpeak */
@@ -198,17 +216,29 @@ void myThingSpeak()
   checkResponse(httpCode);
 }
 
+/* function to get time by NTP and adjust RTC, taking DST in consideration */
+void myNTPUpdate()
+{
+  if (timeClient.update())
+  {
+    unsigned long t = timeClient.getEpochTime();
+    if (dst_rtc.checkDST(t) == true)
+    {
+      t = t + 3600;
+    }
+    rtc.adjust(DateTime(year(t), month(t), day(t), hour(t), minute(t), second(t)));
+  }
+}
+
 /* function to check http response code from ThingSpeak. OK if 200, NOK in any other case */
 void checkResponse(int code)
 {
   if (code == 200)
   {
-    Serial.println("Channel write successful.");
     myWiFiIsOk = true;
   }
   else
   {
-    Serial.println("Problem writing to channel. HTTP error code " + String(code));
     myWiFiIsOk = false;
   }
 }
@@ -218,7 +248,7 @@ void myLCDTimer()
 {
   const byte lcdOn = 6;
   const byte lcdOff = 22;
-  int myHour = now.hour();
+  int myHour = mNow.hour();
   if (myHour == lcdOn && !lcdState) // TODO refactor me
   {
     lcd.backlight();
@@ -228,5 +258,18 @@ void myLCDTimer()
   {
     lcd.noBacklight();
     lcdState = !lcdState;
+  }
+}
+
+/* function to activate some tasks with delay */
+void myActivationCallback()
+{
+  if (t5.getRunCounter() == 20)
+  {
+    t3.enable();
+  }
+  if (t5.getRunCounter() == 30)
+  {
+    t4.enable();
   }
 }
