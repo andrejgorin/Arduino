@@ -16,12 +16,14 @@
 #include <WiFiUdp.h>
 #include <TimeLib.h>
 #include <DST_RTC.h>
+#include <ArduinoJson.h>
 #include "MyCredentials.h"
 
 /***** debug option ****/
 
-// #define _DEBUG_
+/* #define _DEBUG_ */
 #ifdef _DEBUG_
+#define serialSpeed = 9600;
 #define SerialD Serial
 #define _PM(a)             \
   SerialD.print(millis()); \
@@ -36,6 +38,13 @@
 #define _PL(a)
 #define _PX(a)
 #endif
+
+/***** OpenWeatherMap part *****/
+
+String cityID = "457065"; // Ogre
+String oWMKey = OW_KEY; // API key for OpenWeatherMap
+String myLine = "";
+int outTemp = 0;
 
 /***** DST part *****/
 
@@ -93,10 +102,6 @@ char fault[] = "No WiFi!";
 char myTime[20]; // second row on LCD
 char myTemp[20]; // fourth row on LCD
 
-/***** speed of serial connection *****/
-
-const unsigned int serialSpeed = 9600;
-
 /***** declare functions in loop *****/
 
 void myLCD();
@@ -112,6 +117,8 @@ void centerLCD(int row, char text[]);
 int myTemperature(DeviceAddress deviceAddress);
 void checkResponse(int code);
 void printSpace(byte count);
+void getWeather();
+void getTempFJson();
 
 /***** Task Scheduler stuff *****/
 
@@ -122,6 +129,7 @@ Task t2(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer);
 Task t3(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak);
 Task t4(24 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
 Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
+Task t6(20 * TASK_MINUTE, TASK_FOREVER, &getWeather);
 
 void setup()
 {
@@ -167,6 +175,7 @@ void setup()
   ts.addTask(t3);
   ts.addTask(t4);
   ts.addTask(t5);
+  ts.addTask(t6);
   t0.enable();
   t1.enable();
   t2.enable();
@@ -210,6 +219,7 @@ void printSpace(byte count)
 /* function to get temperature from DS18B20, round it and convert to integer */
 int myTemperature(DeviceAddress deviceAddress)
 {
+  sensors.requestTemperatures();
   float tempC = sensors.getTempC(deviceAddress);
   int intTemp = round(tempC);
   return intTemp;
@@ -236,8 +246,7 @@ void myLCD()
           mNow.second());
   centerLCD(1, myTime);
   centerLCD(2, daysOfTheWeek[mNow.dayOfTheWeek()]);
-  sensors.requestTemperatures();
-  sprintf(myTemp, "Temp: %i C", myTemperature(sensorBedroom));
+  sprintf(myTemp, "In: %iC, Out: %iC", myTemperature(sensorBedroom), outTemp);
   centerLCD(3, myTemp);
 }
 
@@ -246,6 +255,7 @@ void myThingSpeak()
 {
   int data = myTemperature(sensorBedroom);
   ThingSpeak.setField(1, data);                                    // Write value to a ThingSpeak Channel Field1
+  ThingSpeak.setField(2, outTemp);                                 // Write value to a ThingSpeak Channel Field1
   ThingSpeak.setStatus(String("Last updated: ") + String(myTime)); // Write status to a ThingSpeak Channel
   int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   checkResponse(httpCode);
@@ -299,12 +309,52 @@ void myLCDTimer()
 /* function to activate some tasks with delay */
 void myActivationCallback()
 {
-  if (t5.getRunCounter() == 20)
+  if (t5.getRunCounter() == 25)
   {
     t3.enable();
+  }
+  if (t5.getRunCounter() == 20)
+  {
+    t6.enable();
   }
   if (t5.getRunCounter() == 30)
   {
     t4.enable();
   }
+}
+
+/* function to get current temperature from openweathermap */
+void getWeather()
+{
+  char server[] = "api.openweathermap.org";
+  if (client.connect(server, 80))
+  {
+    client.print("GET /data/2.5/weather?");
+    client.print("id=" + cityID);
+    client.print("&appid=" + oWMKey);
+    client.println("&units=metric");
+    client.println("Host: api.openweathermap.org");
+    client.println("Connection: close");
+    client.println();
+    while (client.connected())
+    {
+      myLine = client.readStringUntil('\n');
+      _PL(myLine);
+      getTempFJson();
+    }
+  }
+  else
+  {
+    _PL("unable to connect");
+  }
+}
+
+void getTempFJson()
+{
+  float tempTemp;
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, myLine);
+  tempTemp = doc["main"]["temp"];
+  outTemp = round(tempTemp);
+  _PL(outTemp);
 }
