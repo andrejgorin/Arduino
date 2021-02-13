@@ -21,9 +21,9 @@
 
 /***** debug option ****/
 
-/* #define _DEBUG_ */
+#define _DEBUG_
 #ifdef _DEBUG_
-#define serialSpeed = 9600;
+#define serialSpeed 9600
 #define SerialD Serial
 #define _PM(a)             \
   SerialD.print(millis()); \
@@ -45,6 +45,8 @@ String cityID = "457065"; // Ogre
 String oWMKey = OW_KEY; // API key for OpenWeatherMap
 String myLine = "";
 int outTemp = 0;
+int pressure = 0;
+int outHumidity = 0;
 
 /***** DST part *****/
 
@@ -255,7 +257,9 @@ void myThingSpeak()
 {
   int data = myTemperature(sensorBedroom);
   ThingSpeak.setField(1, data);                                    // Write value to a ThingSpeak Channel Field1
-  ThingSpeak.setField(2, outTemp);                                 // Write value to a ThingSpeak Channel Field1
+  ThingSpeak.setField(2, outTemp);   
+  ThingSpeak.setField(3, pressure);   
+  ThingSpeak.setField(4, outHumidity);   
   ThingSpeak.setStatus(String("Last updated: ") + String(myTime)); // Write status to a ThingSpeak Channel
   int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   checkResponse(httpCode);
@@ -356,5 +360,7 @@ void getTempFJson()
   deserializeJson(doc, myLine);
   tempTemp = doc["main"]["temp"];
   outTemp = round(tempTemp);
+  pressure = doc["main"]["pressure"];
+  outHumidity = doc["main"]["humidity"];
   _PL(outTemp);
 }
