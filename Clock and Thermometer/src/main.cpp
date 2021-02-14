@@ -21,7 +21,7 @@
 
 /***** debug option ****/
 
-#define _DEBUG_
+// #define _DEBUG_
 #ifdef _DEBUG_
 #define serialSpeed 9600
 #define SerialD Serial
@@ -42,7 +42,7 @@
 /***** OpenWeatherMap part *****/
 
 String cityID = "457065"; // Ogre
-String oWMKey = OW_KEY; // API key for OpenWeatherMap
+String oWMKey = OW_KEY;   // API key for OpenWeatherMap
 String myLine = "";
 int outTemp = 0;
 int pressure = 0;
@@ -92,16 +92,17 @@ LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //initiate lcd
 const byte lcdOn = 6;
 const byte lcdOff = 22;
 bool lcdState = true;
-char daysOfTheWeek[7][10] = {"Sunday",
-                             "Monday",
-                             "Tuesday",
-                             "Wednesday",
-                             "Thursday",
-                             "Friday",
-                             "Saturday"}; // to convert int to name of day of week
-char city[] = "Ogre, LV";                 // first row on LCD
+char daysOfTheWeek[7][10] = {"Sun",
+                             "Mon",
+                             "Tue",
+                             "Wed",
+                             "Thu",
+                             "Fri",
+                             "Sat"}; // to convert int to name of day of week
 char fault[] = "No WiFi!";
+char myWeek[20]; // first row on LCD
 char myTime[20]; // second row on LCD
+char myHum[20];  // third row on LCD
 char myTemp[20]; // fourth row on LCD
 
 /***** declare functions in loop *****/
@@ -112,6 +113,7 @@ void myThingSpeak();
 void myNTPUpdate();
 void myActivationCallback();
 void myTimeCheck();
+void myGetWeather();
 
 /***** declare helper functions *****/
 
@@ -119,7 +121,6 @@ void centerLCD(int row, char text[]);
 int myTemperature(DeviceAddress deviceAddress);
 void checkResponse(int code);
 void printSpace(byte count);
-void getWeather();
 void getTempFJson();
 
 /***** Task Scheduler stuff *****/
@@ -131,7 +132,7 @@ Task t2(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer);
 Task t3(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak);
 Task t4(24 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
 Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
-Task t6(20 * TASK_MINUTE, TASK_FOREVER, &getWeather);
+Task t6(20 * TASK_MINUTE, TASK_FOREVER, &myGetWeather);
 
 void setup()
 {
@@ -230,9 +231,10 @@ int myTemperature(DeviceAddress deviceAddress)
 /* function to print all necessary info on LCD */
 void myLCD()
 {
+  sprintf(myWeek, "%s", daysOfTheWeek[mNow.dayOfTheWeek()]);
   if (myWiFiIsOk)
   {
-    centerLCD(0, city);
+    centerLCD(0, myWeek);
   }
   else
   {
@@ -247,7 +249,8 @@ void myLCD()
           mNow.minute(),
           mNow.second());
   centerLCD(1, myTime);
-  centerLCD(2, daysOfTheWeek[mNow.dayOfTheWeek()]);
+  sprintf(myHum, "H: %i%%, P: %ihPa", outHumidity, pressure);
+  centerLCD(2, myHum);
   sprintf(myTemp, "In: %iC, Out: %iC", myTemperature(sensorBedroom), outTemp);
   centerLCD(3, myTemp);
 }
@@ -256,10 +259,10 @@ void myLCD()
 void myThingSpeak()
 {
   int data = myTemperature(sensorBedroom);
-  ThingSpeak.setField(1, data);                                    // Write value to a ThingSpeak Channel Field1
-  ThingSpeak.setField(2, outTemp);   
-  ThingSpeak.setField(3, pressure);   
-  ThingSpeak.setField(4, outHumidity);   
+  ThingSpeak.setField(1, data); // Write value to a ThingSpeak Channel Field1
+  ThingSpeak.setField(2, outTemp);
+  ThingSpeak.setField(3, pressure);
+  ThingSpeak.setField(4, outHumidity);
   ThingSpeak.setStatus(String("Last updated: ") + String(myTime)); // Write status to a ThingSpeak Channel
   int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   checkResponse(httpCode);
@@ -328,7 +331,7 @@ void myActivationCallback()
 }
 
 /* function to get current temperature from openweathermap */
-void getWeather()
+void myGetWeather()
 {
   char server[] = "api.openweathermap.org";
   if (client.connect(server, 80))
