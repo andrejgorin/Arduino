@@ -41,8 +41,6 @@
 
 /***** OpenWeatherMap part *****/
 
-String cityID = "457065"; // Ogre
-String oWMKey = OW_KEY;   // API key for OpenWeatherMap
 String myLine = "";
 int outTemp = 0;
 int pressure = 0;
@@ -66,18 +64,12 @@ const char *MYPASS = PASS; // network password
 WiFiClient client;         // initialize wifi
 bool myWiFiIsOk = true;    // false if http code from ThingSpeak is not 200
 
-/***** ThingSpeak stuff *****/
-
-const char *myWriteAPIKey = T_AUTH;                 // api key for ThingSpeak
-const unsigned long myChannelNumber = SECRET_CH_ID; // channel id for ThingSpeak
-
 /***** DS18B20 part *****/
 
 const byte ONE_WIRE_BUS = 13;                                                // DS18B20 plugged into GPIO13
 OneWire oneWire(ONE_WIRE_BUS);                                               // initiate oneWire for DS18B20
 DallasTemperature sensors(&oneWire);                                         // Pass oneWire reference to Dallas Temperature
 uint8_t sensorBedroom[8] = {0x28, 0x31, 0x94, 0x19, 0x51, 0x20, 0x01, 0x88}; // address of DS18B20 in bedroom
-const byte resolution = 9;                                                   // resolution of DS18B20
 
 /***** initiate rtc *****/
 
@@ -89,21 +81,7 @@ DateTime mNow;
 const byte lcdColumns = 20;                       // set number of columns of the LCD
 const byte lcdRows = 4;                           // set number of rows of the LCD
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //initiate lcd
-const byte lcdOn = 6;
-const byte lcdOff = 22;
-bool lcdState = true;
-char daysOfTheWeek[7][10] = {"Sun",
-                             "Mon",
-                             "Tue",
-                             "Wed",
-                             "Thu",
-                             "Fri",
-                             "Sat"}; // to convert int to name of day of week
-char fault[] = "No WiFi!";
-char myWeek[20]; // first row on LCD
-char myTime[20]; // second row on LCD
-char myHum[20];  // third row on LCD
-char myTemp[20]; // fourth row on LCD
+char myTime[21];                                  // second row on LCD
 
 /***** declare functions in loop *****/
 
@@ -117,7 +95,7 @@ void myGetWeather();
 
 /***** declare helper functions *****/
 
-void centerLCD(int row, char text[]);
+void centerLCD(byte row, char text[]);
 int myTemperature(DeviceAddress deviceAddress);
 void checkResponse(int code);
 void printSpace(byte count);
@@ -145,6 +123,7 @@ void setup()
 
   /***** initiate DS18B20 *****/
 
+  const byte resolution = 9; // resolution of DS18B20
   sensors.begin();
   sensors.setResolution(sensorBedroom, resolution); // set resolution of DS18B20 to minimum
 
@@ -231,6 +210,17 @@ int myTemperature(DeviceAddress deviceAddress)
 /* function to print all necessary info on LCD */
 void myLCD()
 {
+  char daysOfTheWeek[7][10] = {"Sun",
+                               "Mon",
+                               "Tue",
+                               "Wed",
+                               "Thu",
+                               "Fri",
+                               "Sat"}; // to convert int to name of day of week
+  char fault[] = "No WiFi!";
+  char myWeek[21]; // first row on LCD
+  char myHum[21];  // third row on LCD
+  char myTemp[21]; // fourth row on LCD
   sprintf(myWeek, "%s", daysOfTheWeek[mNow.dayOfTheWeek()]);
   if (myWiFiIsOk)
   {
@@ -258,6 +248,8 @@ void myLCD()
 /* function to send data to ThingSpeak */
 void myThingSpeak()
 {
+  const char *myWriteAPIKey = T_AUTH;                 // api key for ThingSpeak
+  const unsigned long myChannelNumber = SECRET_CH_ID; // channel id for ThingSpeak
   int data = myTemperature(sensorBedroom);
   ThingSpeak.setField(1, data); // Write value to a ThingSpeak Channel Field1
   ThingSpeak.setField(2, outTemp);
@@ -278,7 +270,8 @@ void myNTPUpdate()
     {
       t = t + 3600;
     }
-    rtc.adjust(DateTime(year(t), month(t), day(t), hour(t), minute(t), second(t)));
+    rtc.adjust(t);
+    //rtc.adjust(DateTime(year(t), month(t), day(t), hour(t), minute(t), second(t)));
   }
 }
 
@@ -298,6 +291,7 @@ void checkResponse(int code)
 /* function to turn lcd backlight on or off by timer */
 void myLCDTimer()
 {
+  static bool lcdState = true;
   const byte lcdOn = 6;
   const byte lcdOff = 22;
   int myHour = mNow.hour();
@@ -333,7 +327,9 @@ void myActivationCallback()
 /* function to get current temperature from openweathermap */
 void myGetWeather()
 {
-  char server[] = "api.openweathermap.org";
+  const String cityID = "457065"; // Ogre
+  const String oWMKey = OW_KEY;   // API key for OpenWeatherMap
+  const char server[] = "api.openweathermap.org";
   if (client.connect(server, 80))
   {
     client.print("GET /data/2.5/weather?");
