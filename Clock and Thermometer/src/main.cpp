@@ -218,30 +218,38 @@ void myLCD()
                                "Fri",
                                "Sat"}; // to convert int to name of day of week
   char fault[] = "No WiFi!";
-  char myWeek[21]; // first row on LCD
   char myHum[21];  // third row on LCD
   char myTemp[21]; // fourth row on LCD
-  sprintf(myWeek, "%s", daysOfTheWeek[mNow.dayOfTheWeek()]);
-  if (myWiFiIsOk)
-  {
-    centerLCD(0, myWeek);
-  }
-  else
+  static bool secCol = true;
+  char *dynPrint;
+  if (!myWiFiIsOk)
   {
     centerLCD(0, fault);
   }
+  if (secCol)
+  {
+    dynPrint = (char *)" ";
+  }
+  else
+  {
+    dynPrint = (char *)":";
+  }
+  secCol = !secCol;
   sprintf(myTime,
-          "%i/%02i/%02i %02i:%02i:%02i",
-          mNow.year(),
-          mNow.month(),
-          mNow.day(),
+          "%02i%s%02i %s %02i/%02i",
           mNow.hour(),
+          dynPrint,
           mNow.minute(),
-          mNow.second());
+          daysOfTheWeek[mNow.dayOfTheWeek()],
+          mNow.day(),
+          mNow.month());
   centerLCD(1, myTime);
-  sprintf(myHum, "H: %i%%, P: %ihPa", outHumidity, pressure);
+  sprintf(myHum, "H: %i%%, P: %i\"Hg", outHumidity, pressure);
   centerLCD(2, myHum);
-  sprintf(myTemp, "In: %iC, Out: %iC", myTemperature(sensorBedroom), outTemp);
+  sprintf(myTemp,
+          "In: %iC, Out: %iC",
+          myTemperature(sensorBedroom),
+          outTemp);
   centerLCD(3, myTemp);
 }
 
@@ -360,6 +368,7 @@ void getTempFJson()
   tempTemp = doc["main"]["temp"];
   outTemp = round(tempTemp);
   pressure = doc["main"]["pressure"];
+  pressure = pressure  / float(1.333);
   outHumidity = doc["main"]["humidity"];
   _PL(outTemp);
 }
