@@ -81,7 +81,7 @@ DateTime mNow;
 const byte lcdColumns = 20;                       // set number of columns of the LCD
 const byte lcdRows = 4;                           // set number of rows of the LCD
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //initiate lcd
-char myTime[21];                                  // second row on LCD
+char myFirst[21];                                  // second row on LCD
 
 /***** declare functions in loop *****/
 
@@ -211,12 +211,12 @@ int myTemperature(DeviceAddress deviceAddress)
 void myLCD()
 {
   char daysOfTheWeek[7][4] = {"Sun",
-                               "Mon",
-                               "Tue",
-                               "Wed",
-                               "Thu",
-                               "Fri",
-                               "Sat"}; // to convert int to name of day of week
+                              "Mon",
+                              "Tue",
+                              "Wed",
+                              "Thu",
+                              "Fri",
+                              "Sat"}; // to convert int to name of day of week
   char monthNames[12][4] = {"Jan",
                             "Feb",
                             "Mar",
@@ -229,19 +229,12 @@ void myLCD()
                             "Oct",
                             "Nov",
                             "Dec"}; // to convert int to name of day of week
-  char fault[] = "No WiFi!";
-  char myHum[21];  // third row on LCD
-  char myTemp[21]; // fourth row on LCD
+  char fault[] = "No WiFi!"; // alternative first row
+  char mySecond[21];  // second row on LCD
+  char myThird[21];  // third row on LCD
+  char myFourth[21]; // fourth row on LCD
   static bool secCol = true;
   char *dynPrint;
-  if (!myWiFiIsOk)
-  {
-    centerLCD(0, fault);
-  }
-  else
-  {
-    centerLCD(0, (char *)"                    "); // TODO temp solution
-  }
   if (secCol)
   {
     dynPrint = (char *)" ";
@@ -250,23 +243,29 @@ void myLCD()
   {
     dynPrint = (char *)":";
   }
-  secCol = !secCol;
-  sprintf(myTime,
+  sprintf(myFirst, 
           "%02i%s%02i %s %i %s",
           mNow.hour(),
           dynPrint,
           mNow.minute(),
           daysOfTheWeek[mNow.dayOfTheWeek()],
           mNow.day(),
-          monthNames[mNow.month()]);
-  centerLCD(1, myTime);
-  sprintf(myHum, "H: %i%%, P: %i\"Hg", outHumidity, pressure);
-  centerLCD(2, myHum);
-  sprintf(myTemp,
-          "In: %iC, Out: %iC",
-          myTemperature(sensorBedroom),
-          outTemp);
-  centerLCD(3, myTemp);
+          monthNames[mNow.month()]); // alternative first row
+  if (!myWiFiIsOk)
+  {
+    centerLCD(0, fault);
+  }
+  else
+  {
+    centerLCD(0, myFirst);
+  }
+  secCol = !secCol;
+  sprintf(mySecond, "I: %iC", myTemperature(sensorBedroom));
+  centerLCD(1, mySecond);
+  sprintf(myThird, "O: %iC, %i%%", outTemp, outHumidity);
+  centerLCD(2, myThird);
+  sprintf(myFourth, "%i\"Hg", pressure);
+  centerLCD(3, myFourth);
 }
 
 /* function to send data to ThingSpeak */
@@ -279,7 +278,7 @@ void myThingSpeak()
   ThingSpeak.setField(2, outTemp);
   ThingSpeak.setField(3, pressure);
   ThingSpeak.setField(4, outHumidity);
-  ThingSpeak.setStatus(String("Last updated: ") + String(myTime)); // Write status to a ThingSpeak Channel
+  ThingSpeak.setStatus(String("Last updated: ") + String(myFirst)); // Write status to a ThingSpeak Channel
   int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   checkResponse(httpCode);
 }
@@ -295,7 +294,6 @@ void myNTPUpdate()
       t = t + 3600;
     }
     rtc.adjust(t);
-    //rtc.adjust(DateTime(year(t), month(t), day(t), hour(t), minute(t), second(t)));
   }
 }
 
@@ -316,7 +314,7 @@ void checkResponse(int code)
 void myLCDTimer()
 {
   static bool lcdState = true;
-  const byte lcdOn = 6;
+  const byte lcdOn = 7;
   const byte lcdOff = 22;
   int myHour = mNow.hour();
   if (myHour == lcdOn && !lcdState) // TODO refactor me
