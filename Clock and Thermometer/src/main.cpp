@@ -210,13 +210,25 @@ int myTemperature(DeviceAddress deviceAddress)
 /* function to print all necessary info on LCD */
 void myLCD()
 {
-  char daysOfTheWeek[7][10] = {"Sun",
+  char daysOfTheWeek[7][4] = {"Sun",
                                "Mon",
                                "Tue",
                                "Wed",
                                "Thu",
                                "Fri",
                                "Sat"}; // to convert int to name of day of week
+  char monthNames[12][4] = {"Jan",
+                            "Feb",
+                            "Mar",
+                            "Apr",
+                            "May",
+                            "Jun",
+                            "Jul",
+                            "Aug",
+                            "Sep",
+                            "Oct",
+                            "Nov",
+                            "Dec"}; // to convert int to name of day of week
   char fault[] = "No WiFi!";
   char myHum[21];  // third row on LCD
   char myTemp[21]; // fourth row on LCD
@@ -225,6 +237,10 @@ void myLCD()
   if (!myWiFiIsOk)
   {
     centerLCD(0, fault);
+  }
+  else
+  {
+    centerLCD(0, (char *)"                    "); // TODO temp solution
   }
   if (secCol)
   {
@@ -236,13 +252,13 @@ void myLCD()
   }
   secCol = !secCol;
   sprintf(myTime,
-          "%02i%s%02i %s %02i/%02i",
+          "%02i%s%02i %s %i %s",
           mNow.hour(),
           dynPrint,
           mNow.minute(),
           daysOfTheWeek[mNow.dayOfTheWeek()],
           mNow.day(),
-          mNow.month());
+          monthNames[mNow.month()]);
   centerLCD(1, myTime);
   sprintf(myHum, "H: %i%%, P: %i\"Hg", outHumidity, pressure);
   centerLCD(2, myHum);
@@ -363,12 +379,14 @@ void myGetWeather()
 void getTempFJson()
 {
   float tempTemp;
+  float tempPress;
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, myLine);
   tempTemp = doc["main"]["temp"];
   outTemp = round(tempTemp);
-  pressure = doc["main"]["pressure"];
-  pressure = pressure  / float(1.333);
+  tempPress = doc["main"]["pressure"];
+  _PL(tempPress);
+  pressure = round(tempPress / float(1.333));
+  _PL(pressure);
   outHumidity = doc["main"]["humidity"];
-  _PL(outTemp);
 }
