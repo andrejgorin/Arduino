@@ -81,7 +81,7 @@ DateTime mNow;
 const byte lcdColumns = 20;                       // set number of columns of the LCD
 const byte lcdRows = 4;                           // set number of rows of the LCD
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //initiate lcd
-char myFirst[21];                                  // second row on LCD
+char myFirst[21];                                 // second row on LCD
 
 /***** declare functions in loop *****/
 
@@ -217,7 +217,8 @@ void myLCD()
                               "Thu",
                               "Fri",
                               "Sat"}; // to convert int to name of day of week
-  char monthNames[12][4] = {"Jan",
+  char monthNames[13][4] = {"",
+                            "Jan",
                             "Feb",
                             "Mar",
                             "Apr",
@@ -229,10 +230,10 @@ void myLCD()
                             "Oct",
                             "Nov",
                             "Dec"}; // to convert int to name of day of week
-  char fault[] = "No WiFi!"; // alternative first row
-  char mySecond[21];  // second row on LCD
-  char myThird[21];  // third row on LCD
-  char myFourth[21]; // fourth row on LCD
+  char fault[] = "No WiFi!";        // alternative first row
+  char mySecond[21];                // second row on LCD
+  char myThird[21];                 // third row on LCD
+  char myFourth[21];                // fourth row on LCD
   static bool secCol = true;
   char *dynPrint;
   if (secCol)
@@ -243,7 +244,7 @@ void myLCD()
   {
     dynPrint = (char *)":";
   }
-  sprintf(myFirst, 
+  sprintf(myFirst,
           "%02i%s%02i %s %i %s",
           mNow.hour(),
           dynPrint,
