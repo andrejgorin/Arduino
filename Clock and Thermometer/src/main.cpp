@@ -11,6 +11,8 @@
 #include <RTClib.h>
 #include <LiquidCrystal_I2C.h>
 #include <DallasTemperature.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
 #include <TaskScheduler.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
@@ -21,7 +23,7 @@
 
 /***** debug option ****/
 
-// #define _DEBUG_
+#define _DEBUG_
 #ifdef _DEBUG_
 #define serialSpeed 9600
 #define SerialD Serial
@@ -38,6 +40,13 @@
 #define _PL(a)
 #define _PX(a)
 #endif
+
+/***** Pressure and temperature on BME280 *****/
+
+Adafruit_BME280 bme;
+int tf = 0;
+int pf = 0;
+int hf = 0;
 
 /***** OpenWeatherMap part *****/
 
@@ -92,6 +101,7 @@ void myNTPUpdate();
 void myActivationCallback();
 void myTimeCheck();
 void myGetWeather();
+void myGetBME280();
 
 /***** declare helper functions *****/
 
@@ -111,6 +121,7 @@ Task t3(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak);
 Task t4(24 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
 Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
 Task t6(20 * TASK_MINUTE, TASK_FOREVER, &myGetWeather);
+Task t7(5 * TASK_SECOND, TASK_FOREVER, &myGetBME280);
 
 void setup()
 {
@@ -120,6 +131,10 @@ void setup()
   delay(2000);
   _PL("begin: setup()");
 #endif
+
+  /***** initiate BME280 *****/
+
+  bme.begin(0x76);
 
   /***** initiate DS18B20 *****/
 
@@ -158,10 +173,12 @@ void setup()
   ts.addTask(t4);
   ts.addTask(t5);
   ts.addTask(t6);
+  ts.addTask(t7);
   t0.enable();
   t1.enable();
   t2.enable();
   t5.enable();
+  t7.enable();
 }
 
 void loop()
@@ -169,6 +186,17 @@ void loop()
   ts.execute();
 }
 
+/* function to get data from BME280 */
+void myGetBME280()
+{
+  tf = round(bme.readTemperature());
+  pf = round(bme.readPressure() / float(133.3));
+  hf = round(bme.readHumidity());
+  _PL(tf);
+  _PL(pf);
+  _PL(hf);
+
+}
 /* just tiny peace of code to get current time from DS3231 */
 void myTimeCheck()
 {
@@ -261,7 +289,7 @@ void myLCD()
     centerLCD(0, myFirst);
   }
   secCol = !secCol;
-  sprintf(mySecond, "I: %iC", myTemperature(sensorBedroom));
+  sprintf(mySecond, "I: %iC, %i%%", myTemperature(sensorBedroom), hf);
   centerLCD(1, mySecond);
   sprintf(myThird, "O: %iC, %i%%", outTemp, outHumidity);
   centerLCD(2, myThird);
@@ -279,6 +307,10 @@ void myThingSpeak()
   ThingSpeak.setField(2, outTemp);
   ThingSpeak.setField(3, pressure);
   ThingSpeak.setField(4, outHumidity);
+  ThingSpeak.setField(5, tf);
+  ThingSpeak.setField(6, pf);
+  ThingSpeak.setField(7, hf);
+  // ThingSpeak.setField(8, outHumidity);
   ThingSpeak.setStatus(String("Last updated: ") + String(myFirst)); // Write status to a ThingSpeak Channel
   int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   checkResponse(httpCode);
