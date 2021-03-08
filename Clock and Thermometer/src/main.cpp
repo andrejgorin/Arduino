@@ -19,7 +19,7 @@
 #include <TimeLib.h>
 #include <DST_RTC.h>
 #include <ArduinoJson.h>
-#include <MHZ19.h>                                        
+#include <MHZ19.h>
 #include <SoftwareSerial.h>
 #include "MyCredentials.h"
 
@@ -46,12 +46,12 @@
 /***** CO2 sensor *****/
 
 #define calibreMe false // if true, MH-Z19B will be calibrated in a 20 minutes
-#define RX_PIN 12 // D6
-#define TX_PIN 15 // D8
+#define RX_PIN 12       // D6
+#define TX_PIN 15       // D8
 #define BAUDRATE 9600
 int CO2 = 0;
 MHZ19 myMHZ19;
-SoftwareSerial mySerial(RX_PIN, TX_PIN); 
+SoftwareSerial mySerial(RX_PIN, TX_PIN);
 
 /***** Pressure and temperature on BME280 *****/
 
@@ -234,7 +234,6 @@ void myGetBME280()
   _PL(tf);
   _PL(pf);
   _PL(hf);
-
 }
 /* just tiny peace of code to get current time from DS3231 */
 void myTimeCheck()
