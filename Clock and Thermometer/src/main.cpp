@@ -19,6 +19,8 @@
 #include <TimeLib.h>
 #include <DST_RTC.h>
 #include <ArduinoJson.h>
+#include <MHZ19.h>                                        
+#include <SoftwareSerial.h>
 #include "MyCredentials.h"
 
 /***** debug option ****/
@@ -40,6 +42,16 @@
 #define _PL(a)
 #define _PX(a)
 #endif
+
+/***** CO2 sensor *****/
+
+#define calibreMe false // if true, MH-Z19B will be calibrated in a 20 minutes
+#define RX_PIN 12 // D6
+#define TX_PIN 15 // D8
+#define BAUDRATE 9600
+int CO2 = 0;
+MHZ19 myMHZ19;
+SoftwareSerial mySerial(RX_PIN, TX_PIN); 
 
 /***** Pressure and temperature on BME280 *****/
 
@@ -102,6 +114,8 @@ void myActivationCallback();
 void myTimeCheck();
 void myGetWeather();
 void myGetBME280();
+void myGetCO2();
+void myCalibration();
 
 /***** declare helper functions *****/
 
@@ -122,6 +136,8 @@ Task t4(24 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
 Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
 Task t6(20 * TASK_MINUTE, TASK_FOREVER, &myGetWeather);
 Task t7(5 * TASK_SECOND, TASK_FOREVER, &myGetBME280);
+Task t8(5 * TASK_SECOND, TASK_FOREVER, &myGetCO2);
+Task t9(TASK_ONCE, TASK_FOREVER, &myCalibration);
 
 void setup()
 {
@@ -131,6 +147,12 @@ void setup()
   delay(2000);
   _PL("begin: setup()");
 #endif
+
+  /***** initiate MH-Z19B *****/
+
+  mySerial.begin(BAUDRATE);
+  myMHZ19.begin(mySerial);
+  myMHZ19.autoCalibration(false);
 
   /***** initiate BME280 *****/
 
@@ -174,16 +196,33 @@ void setup()
   ts.addTask(t5);
   ts.addTask(t6);
   ts.addTask(t7);
+  ts.addTask(t8);
+  ts.addTask(t9);
   t0.enable();
   t1.enable();
   t2.enable();
   t5.enable();
   t7.enable();
+  t8.enable();
 }
 
 void loop()
 {
   ts.execute();
+}
+
+/* function to calibrate MH-Z19B */
+void myCalibration()
+{
+  myMHZ19.calibrate();
+}
+
+/* function to get data from MH-Z19B */
+void myGetCO2()
+{
+  CO2 = myMHZ19.getCO2();
+  _PP("CO2: ");
+  _PL(CO2);
 }
 
 /* function to get data from BME280 */
@@ -289,7 +328,7 @@ void myLCD()
     centerLCD(0, myFirst);
   }
   secCol = !secCol;
-  sprintf(mySecond, "I: %iC, %i%%", myTemperature(sensorBedroom), hf);
+  sprintf(mySecond, "I: %iC, %i%%, %ippm", myTemperature(sensorBedroom), hf, CO2);
   centerLCD(1, mySecond);
   sprintf(myThird, "O: %iC, %i%%", outTemp, outHumidity);
   centerLCD(2, myThird);
@@ -310,7 +349,7 @@ void myThingSpeak()
   ThingSpeak.setField(5, tf);
   ThingSpeak.setField(6, pf);
   ThingSpeak.setField(7, hf);
-  // ThingSpeak.setField(8, outHumidity);
+  ThingSpeak.setField(8, CO2);
   ThingSpeak.setStatus(String("Last updated: ") + String(myFirst)); // Write status to a ThingSpeak Channel
   int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   checkResponse(httpCode);
@@ -376,6 +415,10 @@ void myActivationCallback()
   if (t5.getRunCounter() == 30)
   {
     t4.enable();
+  }
+  if (t5.getRunCounter() == 1200 && calibreMe)
+  {
+    t9.enable();
   }
 }
 
