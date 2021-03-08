@@ -25,7 +25,7 @@
 
 /***** debug option ****/
 
-#define _DEBUG_
+// #define _DEBUG_
 #ifdef _DEBUG_
 #define serialSpeed 9600
 #define SerialD Serial
