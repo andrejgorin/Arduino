@@ -1,5 +1,6 @@
-/* Clock, calendar and thermometer.
- * Sends temperature data to ThingSpeak.
+/* Clock, calendar, thermometer, humidity, pressure.
+ * NTP, additional weather data from OpenWeatherMap.
+ * Sends data to ThingSpeak.
  * Based on ESP8266 chip.
  */
 
@@ -29,26 +30,19 @@
 #ifdef _DEBUG_
 #define serialSpeed 9600
 #define SerialD Serial
-#define _PM(a)             \
-  SerialD.print(millis()); \
-  SerialD.print(": ");     \
-  SerialD.println(a)
 #define _PP(a) SerialD.print(a)
 #define _PL(a) SerialD.println(a)
-#define _PX(a) SerialD.println(a, HEX)
 #else
-#define _PM(a)
 #define _PP(a)
 #define _PL(a)
-#define _PX(a)
 #endif
 
 /***** CO2 sensor *****/
 
-#define calibreMe false // if true, MH-Z19B will be calibrated in a 20 minutes
-#define RX_PIN 12       // D6
-#define TX_PIN 15       // D8
-#define BAUDRATE 9600
+const bool calibreMe = false; // if true, MH-Z19B will be calibrated in a 20 minutes
+const byte RX_PIN = 12;       // D6 on ESP8266
+const byte TX_PIN = 15;       // D8 on ESP8266
+const unsigned int BAUDRATE = 9600;
 int CO2 = 0;
 MHZ19 myMHZ19;
 SoftwareSerial mySerial(RX_PIN, TX_PIN);
@@ -145,7 +139,7 @@ void setup()
 #if defined(_DEBUG_)
   Serial.begin(serialSpeed);
   delay(2000);
-  _PL("begin: setup()");
+  _PL("Debug mode begin: setup()");
 #endif
 
   /***** initiate MH-Z19B *****/
@@ -156,7 +150,7 @@ void setup()
 
   /***** initiate BME280 *****/
 
-  bme.begin(0x76);
+  bme.begin(0x76); // address of sensor on i2c
 
   /***** initiate DS18B20 *****/
 
