@@ -130,7 +130,7 @@ Task t4(24 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
 Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
 Task t6(20 * TASK_MINUTE, TASK_FOREVER, &myGetWeather);
 Task t7(5 * TASK_SECOND, TASK_FOREVER, &myGetBME280);
-Task t8(5 * TASK_SECOND, TASK_FOREVER, &myGetCO2);
+Task t8(20 * TASK_SECOND, TASK_FOREVER, &myGetCO2);
 Task t9(TASK_ONCE, TASK_FOREVER, &myCalibration);
 
 void setup()
