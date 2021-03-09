@@ -321,9 +321,9 @@ void myLCD()
     centerLCD(0, myFirst);
   }
   secCol = !secCol;
-  sprintf(mySecond, "I: %iC, %i%%, %ippm", myTemperature(sensorBedroom), hf, CO2);
+  sprintf(mySecond, "I:%iC,%i%%,%ippm", myTemperature(sensorBedroom), hf, CO2);
   centerLCD(1, mySecond);
-  sprintf(myThird, "O: %iC, %i%%", outTemp, outHumidity);
+  sprintf(myThird, "O:%iC,%i%%", outTemp, outHumidity);
   centerLCD(2, myThird);
   sprintf(myFourth, "%i\"Hg", pressure);
   centerLCD(3, myFourth);
