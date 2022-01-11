@@ -74,8 +74,8 @@ void connectAWS()
 void publishMessage()
 {
   StaticJsonDocument<200> doc;
-  doc["humidity"] = 40;    // CHANGEME
-  doc["temperature"] = 20; // CHANGEME
+  doc["humidity"] = 45;    // CHANGEME
+  doc["temperature"] = 22; // CHANGEME
   doc["did"] = WiFi.macAddress();
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer); // print to client
