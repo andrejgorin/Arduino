@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
@@ -8,7 +7,7 @@
 #define IOT_PUBLISH_TOPIC "esp32/pub"
 #define IOT_SUBSCRIBE_TOPIC "esp32/sub"
 
-WiFiClientSecure net = WiFiClientSecure();
+WiFiClient net;
 PubSubClient client(net);
 
 void messageHandler(char *topic, byte *payload, unsigned int length);
@@ -26,8 +25,7 @@ void connectBroker()
     Serial.print(".");
   }
   Serial.println(WiFi.localIP());
-  net.setCACert(CERT_CA);
-  client.setServer(IOT_ENDPOINT, 8883);
+  client.setServer(IOT_ENDPOINT, 1883);
 
   // Create a message handler
   client.setCallback(messageHandler);
@@ -35,7 +33,7 @@ void connectBroker()
   Serial.println("Connecting to broker");
   while (!client.connected())
   {
-    if (client.connect(THINGNAME, HIVE_USER, HIVE_PASS))
+    if (client.connect(THINGNAME, MQTT_USER, MQTT_PASS))
     {
       Serial.println("Connected.");
     }
