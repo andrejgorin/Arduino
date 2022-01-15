@@ -113,7 +113,7 @@ void checkResponse(int code);
 void printSpace(byte count);
 void getTempFJson();
 void getDirLit(int outDirection);
-char * strToChar(String str);
+char *strToChar(String str);
 
 /***** Task Scheduler stuff *****/
 
@@ -142,6 +142,7 @@ void setup()
 
   mySerial.begin(BAUDRATE);
   myMHZ19.begin(mySerial);
+  myMHZ19.setFilter(true, true);
   myMHZ19.autoCalibration(false);
 
   /***** initiate BME280 *****/
@@ -204,7 +205,11 @@ void myCalibration()
 /* function to get data from MH-Z19B */
 void myGetCO2()
 {
-  CO2 = myMHZ19.getCO2();
+  int tempCO2 = myMHZ19.getCO2(true);
+  if (tempCO2 != 0)
+  {
+    CO2 = tempCO2;
+  }
   _PP("CO2: ");
   _PL(CO2);
 }
@@ -306,10 +311,6 @@ void myLCD()
   centerLCD(1, mySecond);
   sprintf(myThird, "O:%iC,%i%%,%i\"Hg,", outTemp, outHumidity, pf);
   centerLCD(2, myThird);
-  //int str_len = outDir.length() + 1;
-  //char char_array[str_len];
-  //outDir.toCharArray(char_array, str_len);
-  //sprintf(myFourth, "%s %i(%i)m/s", char_array, outWind, outGust);
   sprintf(myFourth, "%s %i(%i)m/s", strToChar(outDir), outWind, outGust);
   centerLCD(3, myFourth);
 }
@@ -326,7 +327,10 @@ void myThingSpeak()
   ThingSpeak.setField(5, tf);
   ThingSpeak.setField(6, pf);
   ThingSpeak.setField(7, hf);
-  ThingSpeak.setField(8, CO2);
+  if (CO2 != 0)
+  {
+    ThingSpeak.setField(8, CO2);
+  }
   ThingSpeak.setStatus(String("Last updated: ") + String(myFirst)); // Write status to a ThingSpeak Channel
   int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   checkResponse(httpCode);
@@ -363,7 +367,7 @@ void checkResponse(int code)
 void myLCDTimer()
 {
   static bool lcdState = true;
-  const byte lcdOn = 8;
+  const byte lcdOn = 7;
   const byte lcdOff = 22;
   int myHour = mNow.hour();
   if (myHour == lcdOn && !lcdState)
@@ -517,7 +521,7 @@ void getDirLit(int outDirection)
   }
 }
 
-char * strToChar(String str)
+char *strToChar(String str)
 {
   static char charArray[3];
   str.toCharArray(charArray, 3);
