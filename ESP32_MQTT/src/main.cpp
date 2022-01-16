@@ -12,7 +12,7 @@ PubSubClient client(net);
 
 void messageHandler(char *topic, byte *payload, unsigned int length);
 
-void connectBroker()
+void connectWiFi()
 {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -25,11 +25,12 @@ void connectBroker()
     Serial.print(".");
   }
   Serial.println(WiFi.localIP());
-  client.setServer(IOT_ENDPOINT, 1883);
-
+}
+void connectBroker()
+{
+  client.setServer(IOT_ENDPOINT, 1880);
   // Create a message handler
   client.setCallback(messageHandler);
-
   Serial.println("Connecting to broker");
   while (!client.connected())
   {
@@ -57,6 +58,10 @@ void connectBroker()
 
 void publishMessage()
 {
+  if (!client.connected())
+  {
+    connectBroker();
+  }
   StaticJsonDocument<200> doc;
   int hum = random(60, 70);
   int temp = random(-20, -10);
@@ -82,6 +87,7 @@ void messageHandler(char *topic, byte *payload, unsigned int length)
 void setup()
 {
   Serial.begin(9600);
+  connectWiFi();
   connectBroker();
 }
 
