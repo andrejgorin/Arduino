@@ -28,7 +28,7 @@ void connectWiFi()
 }
 void connectBroker()
 {
-  client.setServer(IOT_ENDPOINT, 1880);
+  client.setServer(IOT_ENDPOINT, 1883);
   // Create a message handler
   client.setCallback(messageHandler);
   Serial.println("Connecting to broker");
