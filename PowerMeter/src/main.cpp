@@ -21,12 +21,14 @@
 #define PZEM_RX_PIN 16
 #define PZEM_TX_PIN 17
 #define PZEM_SERIAL Serial2
-PZEM004Tv30 pzem(PZEM_SERIAL, PZEM_RX_PIN, PZEM_TX_PIN);
-float voltage = 0;
+#define ADDRESS 0x02
+#define PHASE "2";
+PZEM004Tv30 pzem2(PZEM_SERIAL, PZEM_RX_PIN, PZEM_TX_PIN, ADDRESS);
+int voltage = 0;
 float current = 0;
-float power = 0;
+int power = 0;
 float energy = 0;
-float frequency = 0;
+int frequency = 0;
 float pf = 0;
 
 /***** WiFi part *****/
@@ -69,12 +71,12 @@ void loop()
 
 void myPzem()
 {
-  voltage = pzem.voltage();
-  current = pzem.current();
-  power = pzem.power();
-  energy = pzem.energy();
-  frequency = pzem.frequency();
-  pf = pzem.pf();
+  voltage = round(pzem2.voltage());
+  current = pzem2.current();
+  power = round(pzem2.power());
+  energy = pzem2.energy();
+  frequency = round(pzem2.frequency());
+  pf = pzem2.pf();
   publishMessage();
 }
 
@@ -118,6 +120,7 @@ void publishMessage()
   doc["frequency"] = frequency;
   doc["pf"] = pf;
   doc["did"] = DID;
+  doc["phase"] = PHASE;
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer);
   client.publish(IOT_PUBLISH_TOPIC, jsonBuffer);
