@@ -1,22 +1,27 @@
+/* Power meter.
+ * Sends data to MQTT broker.
+ * Based on ESP32 chip.
+ */
+
+/***** libaries and files to include *****/
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <PZEM004Tv30.h>
+#include <TaskScheduler.h>
 #include "MyCredentials.h"
 
+/***** MQTT topics *****/
 #define IOT_PUBLISH_TOPIC "esp32/pub"
 #define IOT_SUBSCRIBE_TOPIC "esp32/sub"
 
+/***** PZEM part *****/
+#define DID "PowerMeter"
 #define PZEM_RX_PIN 16
 #define PZEM_TX_PIN 17
 #define PZEM_SERIAL Serial2
-
 PZEM004Tv30 pzem(PZEM_SERIAL, PZEM_RX_PIN, PZEM_TX_PIN);
-
-WiFiClient net;
-PubSubClient client(net);
-
 float voltage = 0;
 float current = 0;
 float power = 0;
@@ -24,89 +29,69 @@ float energy = 0;
 float frequency = 0;
 float pf = 0;
 
+/***** WiFi part *****/
+WiFiClient net;
+
+/***** MQTT part *****/
+PubSubClient client(net);
+
+/***** declare functions in loop *****/
+void myPzem();
+void checkConnections();
+
+/***** declare helper functions *****/
 void messageHandler(char *topic, byte *payload, unsigned int length);
+void connectWiFi();
+void connectBroker();
+void publishMessage();
+
+/***** Task Scheduler stuff *****/
+Scheduler ts;
+Task t0(5 * TASK_SECOND, TASK_FOREVER, &myPzem);
+Task t1(15 * TASK_SECOND, TASK_FOREVER, &checkConnections);
+
+void setup()
+{
+  Serial.begin(9600);
+  connectWiFi();
+  connectBroker();
+  ts.addTask(t0);
+  ts.addTask(t1);
+  t0.enable();
+  t1.enable();
+}
+
+void loop()
+{
+  client.loop();
+  ts.execute();
+}
 
 void myPzem()
-{ 
+{
   voltage = pzem.voltage();
   current = pzem.current();
   power = pzem.power();
   energy = pzem.energy();
   frequency = pzem.frequency();
   pf = pzem.pf();
-
-  // Check if the data is valid
-  if (isnan(voltage))
-  {
-    Serial.println("Error reading voltage");
-  }
-  else if (isnan(current))
-  {
-    Serial.println("Error reading current");
-  }
-  else if (isnan(power))
-  {
-    Serial.println("Error reading power");
-  }
-  else if (isnan(energy))
-  {
-    Serial.println("Error reading energy");
-  }
-  else if (isnan(frequency))
-  {
-    Serial.println("Error reading frequency");
-  }
-  else if (isnan(pf))
-  {
-    Serial.println("Error reading power factor");
-  }
-  else
-  {
-
-    // Print the values to the Serial console
-    Serial.print("Voltage: ");
-    Serial.print(voltage);
-    Serial.println("V");
-    Serial.print("Current: ");
-    Serial.print(current);
-    Serial.println("A");
-    Serial.print("Power: ");
-    Serial.print(power);
-    Serial.println("W");
-    Serial.print("Energy: ");
-    Serial.print(energy);
-    Serial.println("kWh");
-    Serial.print("Frequency: ");
-    Serial.print(frequency);
-    Serial.println("Hz");
-    Serial.print("PF: ");
-    Serial.println(pf);
-  }
-
-  Serial.println();
-  delay(2000);
+  publishMessage();
 }
 
 void connectWiFi()
 {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  Serial.println("Connecting to Wi-Fi");
-
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
-    Serial.print(".");
   }
-  Serial.println(WiFi.localIP());
 }
+
 void connectBroker()
 {
   client.setServer(IOT_ENDPOINT, 1883);
-  // Create a message handler
   client.setCallback(messageHandler);
-  Serial.println("Connecting to broker");
   while (!client.connected())
   {
     if (client.connect(THINGNAME, MQTT_USER, MQTT_PASS))
@@ -117,26 +102,14 @@ void connectBroker()
     {
       Serial.print("Failed. Error state=");
       Serial.print(client.state());
-      // Wait 5 seconds before retrying
-      delay(5000);
+      delay(500);
     }
   }
-
-  if (!client.connected())
-  {
-    Serial.println("Broker timeout!");
-    return;
-  }
-  // Subscribe to a topic
   client.subscribe(IOT_SUBSCRIBE_TOPIC);
 }
 
 void publishMessage()
 {
-  if (!client.connected())
-  {
-    connectBroker();
-  }
   StaticJsonDocument<200> doc;
   doc["voltage"] = voltage;
   doc["current"] = current;
@@ -144,9 +117,9 @@ void publishMessage()
   doc["energy"] = energy;
   doc["frequency"] = frequency;
   doc["pf"] = pf;
-  doc["did"] = WiFi.macAddress();
+  doc["did"] = DID;
   char jsonBuffer[512];
-  serializeJson(doc, jsonBuffer); // print to client
+  serializeJson(doc, jsonBuffer);
   client.publish(IOT_PUBLISH_TOPIC, jsonBuffer);
 }
 
@@ -161,17 +134,14 @@ void messageHandler(char *topic, byte *payload, unsigned int length)
   Serial.println(message);
 }
 
-void setup()
+void checkConnections()
 {
-  Serial.begin(9600);
-  connectWiFi();
-  connectBroker();
-}
-
-void loop()
-{
-  publishMessage();
-  client.loop();
-  delay(1000);
-  myPzem();
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    connectWiFi();
+  }
+  if (!client.connected())
+  {
+    connectBroker();
+  }
 }
