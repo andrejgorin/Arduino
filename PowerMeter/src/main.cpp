@@ -4,6 +4,7 @@
  */
 
 /***** libaries and files to include *****/
+
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
@@ -15,43 +16,57 @@
 #include <ArduinoOTA.h>
 #include "MyCredentials.h"
 
+/***** Define devise name for Mdns and DB *****/
+
+#define DID "PowerMeter"
+
 /***** MQTT topics *****/
+
 #define IOT_PUBLISH_TOPIC "esp32/pub"
 #define IOT_SUBSCRIBE_TOPIC "esp32/sub"
 
 /***** PZEM part *****/
-#define DID "PowerMeter"
+
 #define PZEM_RX_PIN 16
 #define PZEM_TX_PIN 17
 #define PZEM_SERIAL Serial2
-#define ADDRESS 0x02
-#define PHASE2 "2";
-PZEM004Tv30 pzem2(PZEM_SERIAL, PZEM_RX_PIN, PZEM_TX_PIN, ADDRESS);
-int voltage2 = 0;
-float current2 = 0;
-int power2 = 0;
-float energy2 = 0;
-int frequency2 = 0;
-float pf2 = 0;
+#define ADDRESS2 0x02
+PZEM004Tv30 pzem2(PZEM_SERIAL, PZEM_RX_PIN, PZEM_TX_PIN, ADDRESS2);
+struct Measurement
+{
+  int voltage;
+  float current;
+  int power;
+  float energy;
+  int frequency;
+  float pf;
+  char phase[2];
+};
 
 /***** WiFi part *****/
+
 WiFiClient net;
 
 /***** MQTT part *****/
+
 PubSubClient client(net);
 
 /***** declare functions in loop *****/
+
 void myPzem();
 void checkConnections();
 
 /***** declare helper functions *****/
-void messageHandler(char *topic, byte *payload, unsigned int length);
+
+void messageHandler(char *topic, byte *payload, unsigned int length); // not in use now
+void readData(Measurement m, PZEM004Tv30 p, char ph[]);
 void connectWiFi();
 void connectBroker();
-void publishMessage();
+void publishMessage(Measurement);
 void setupOTA();
 
 /***** Task Scheduler stuff *****/
+
 Scheduler ts;
 Task t0(5 * TASK_SECOND, TASK_FOREVER, &myPzem);
 Task t1(15 * TASK_SECOND, TASK_FOREVER, &checkConnections);
@@ -70,22 +85,33 @@ void setup()
 
 void loop()
 {
-  client.loop();
   ts.execute();
+  client.loop();
   ArduinoOTA.handle();
 }
 
+/***** Read data from PZEM in TS loop *****/
 void myPzem()
 {
-  voltage2 = round(pzem2.voltage());
-  current2 = pzem2.current();
-  power2 = round(pzem2.power());
-  energy2 = pzem2.energy();
-  frequency2 = round(pzem2.frequency());
-  pf2 = pzem2.pf();
-  publishMessage();
+  Measurement msrm2;
+  char tempP[2] = "2";
+  readData(msrm2, pzem2, tempP);
 }
 
+/***** Read data from PZEM and send to broker *****/
+void readData(Measurement m, PZEM004Tv30 p, char ph[])
+{
+  m.voltage = round(p.voltage());
+  m.current = p.current();
+  m.power = round(p.power());
+  m.energy = p.energy();
+  m.frequency = round(p.frequency());
+  m.pf = p.pf();
+  strcpy(m.phase, ph);
+  publishMessage(m);
+}
+
+/***** Connect to WiFi *****/
 void connectWiFi()
 {
   WiFi.mode(WIFI_STA);
@@ -96,6 +122,7 @@ void connectWiFi()
   }
 }
 
+/***** Connect to broker *****/
 void connectBroker()
 {
   client.setServer(IOT_ENDPOINT, 1883);
@@ -116,22 +143,24 @@ void connectBroker()
   client.subscribe(IOT_SUBSCRIBE_TOPIC);
 }
 
-void publishMessage()
+/***** publish message *****/
+void publishMessage(Measurement m)
 {
   StaticJsonDocument<200> doc;
-  doc["voltage"] = voltage2;
-  doc["current"] = current2;
-  doc["power"] = power2;
-  doc["energy"] = energy2;
-  doc["frequency"] = frequency2;
-  doc["pf"] = pf2;
+  doc["voltage"] = m.voltage;
+  doc["current"] = m.current;
+  doc["power"] = m.power;
+  doc["energy"] = m.energy;
+  doc["frequency"] = m.frequency;
+  doc["pf"] = m.pf;
   doc["did"] = DID;
-  doc["phase"] = PHASE2;
+  doc["phase"] = m.phase;
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer);
   client.publish(IOT_PUBLISH_TOPIC, jsonBuffer);
 }
 
+/***** callback (not in use now) *****/
 void messageHandler(char *topic, byte *payload, unsigned int length)
 { /***** test message: "{"message": "Hello, world!"}" *****/
   Serial.print("incoming topic: ");
@@ -143,6 +172,7 @@ void messageHandler(char *topic, byte *payload, unsigned int length)
   Serial.println(message);
 }
 
+/***** check connection to WiFi and broker in TS loop *****/
 void checkConnections()
 {
   if (WiFi.status() != WL_CONNECTED)
@@ -155,6 +185,7 @@ void checkConnections()
   }
 }
 
+/***** Setup OTA *****/
 void setupOTA()
 {
   ArduinoOTA.setHostname(DID);
