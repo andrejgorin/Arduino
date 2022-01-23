@@ -34,6 +34,7 @@ void loop()
 void setupOTA()
 {
   ArduinoOTA.setHostname("myesp8266");
+  ArduinoOTA.setPassword("updatepass");
   ArduinoOTA.onStart([]()
                      {
     String type;

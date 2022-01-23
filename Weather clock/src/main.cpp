@@ -539,6 +539,7 @@ char *strToChar(String str)
 void setupOTA()
 {
   ArduinoOTA.setHostname("weatherclock");
+  ArduinoOTA.setPassword("updatepass");
   ArduinoOTA.onStart([]()
                      {
     String type;

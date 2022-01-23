@@ -158,6 +158,7 @@ void checkConnections()
 void setupOTA()
 {
   ArduinoOTA.setHostname("powermeter");
+  ArduinoOTA.setPassword("updatepass");
   ArduinoOTA.onStart([]()
                      {
     String type;
