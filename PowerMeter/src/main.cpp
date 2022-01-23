@@ -25,14 +25,14 @@
 #define PZEM_TX_PIN 17
 #define PZEM_SERIAL Serial2
 #define ADDRESS 0x02
-#define PHASE "2";
+#define PHASE2 "2";
 PZEM004Tv30 pzem2(PZEM_SERIAL, PZEM_RX_PIN, PZEM_TX_PIN, ADDRESS);
-int voltage = 0;
-float current = 0;
-int power = 0;
-float energy = 0;
-int frequency = 0;
-float pf = 0;
+int voltage2 = 0;
+float current2 = 0;
+int power2 = 0;
+float energy2 = 0;
+int frequency2 = 0;
+float pf2 = 0;
 
 /***** WiFi part *****/
 WiFiClient net;
@@ -77,12 +77,12 @@ void loop()
 
 void myPzem()
 {
-  voltage = round(pzem2.voltage());
-  current = pzem2.current();
-  power = round(pzem2.power());
-  energy = pzem2.energy();
-  frequency = round(pzem2.frequency());
-  pf = pzem2.pf();
+  voltage2 = round(pzem2.voltage());
+  current2 = pzem2.current();
+  power2 = round(pzem2.power());
+  energy2 = pzem2.energy();
+  frequency2 = round(pzem2.frequency());
+  pf2 = pzem2.pf();
   publishMessage();
 }
 
@@ -119,14 +119,14 @@ void connectBroker()
 void publishMessage()
 {
   StaticJsonDocument<200> doc;
-  doc["voltage"] = voltage;
-  doc["current"] = current;
-  doc["power"] = power;
-  doc["energy"] = energy;
-  doc["frequency"] = frequency;
-  doc["pf"] = pf;
+  doc["voltage"] = voltage2;
+  doc["current"] = current2;
+  doc["power"] = power2;
+  doc["energy"] = energy2;
+  doc["frequency"] = frequency2;
+  doc["pf"] = pf2;
   doc["did"] = DID;
-  doc["phase"] = PHASE;
+  doc["phase"] = PHASE2;
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer);
   client.publish(IOT_PUBLISH_TOPIC, jsonBuffer);
@@ -157,8 +157,8 @@ void checkConnections()
 
 void setupOTA()
 {
-  ArduinoOTA.setHostname("powermeter");
-  ArduinoOTA.setPassword("updatepass");
+  ArduinoOTA.setHostname(DID);
+  ArduinoOTA.setPassword(OTA_PASS);
   ArduinoOTA.onStart([]()
                      {
     String type;

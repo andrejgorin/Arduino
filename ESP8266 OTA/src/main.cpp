@@ -4,6 +4,8 @@
 #include <ArduinoOTA.h>
 #include "MyCredentials.h"
 
+#define DID "myesp8266"
+
 const char *ssid = STASSID;
 const char *password = STAPSK;
 
@@ -33,8 +35,8 @@ void loop()
 
 void setupOTA()
 {
-  ArduinoOTA.setHostname("myesp8266");
-  ArduinoOTA.setPassword("updatepass");
+  ArduinoOTA.setHostname(DID);
+  ArduinoOTA.setPassword(OTA_PASS);
   ArduinoOTA.onStart([]()
                      {
     String type;

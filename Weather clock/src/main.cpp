@@ -79,6 +79,7 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
 
 /***** wifi stuff *****/
 
+#define DID "WeatherClock"
 const char *MYSSID = SSID; // network SSID (name)
 const char *MYPASS = PASS; // network password
 WiFiClient client;         // initialize wifi
@@ -530,8 +531,8 @@ void getDirLit(int outDirection)
 
 void setupOTA()
 {
-  ArduinoOTA.setHostname("weatherclock");
-  ArduinoOTA.setPassword("updatepass");
+  ArduinoOTA.setHostname(DID);
+  ArduinoOTA.setPassword(OTA_PASS);
   ArduinoOTA.onStart([]()
                      {
     String type;
