@@ -64,7 +64,7 @@ int outWind = 0;
 int outGust = 0;
 int outHumidity = 0;
 int outDirection = 0;
-String outDir = "";
+char outDir[4];
 
 /***** DST part *****/
 
@@ -116,7 +116,6 @@ void checkResponse(int code);
 void printSpace(byte count);
 void getTempFJson();
 void getDirLit(int outDirection);
-char *strToChar(String str);
 void setupOTA();
 
 /***** Task Scheduler stuff *****/
@@ -320,7 +319,7 @@ void myLCD()
   centerLCD(1, mySecond);
   sprintf(myThird, "O:%iC,%i%%,%i\"Hg,", outTemp, outHumidity, pf);
   centerLCD(2, myThird);
-  sprintf(myFourth, "%s %i(%i)m/s", strToChar(outDir), outWind, outGust);
+  sprintf(myFourth, "%s %i(%i)m/s", outDir, outWind, outGust);
   centerLCD(3, myFourth);
 }
 
@@ -461,79 +460,72 @@ void getDirLit(int outDirection)
 {
   if (outDirection >= 349)
   {
-    outDir = "N";
+    strcpy(outDir, "N");
   }
   if (outDirection <= 11)
   {
-    outDir = "N";
+    strcpy(outDir, "N");
   }
   if ((outDirection >= 12) && (outDirection <= 33))
   {
-    outDir = "NNE";
+    strcpy(outDir, "NNE");
   }
   if ((outDirection >= 34) && (outDirection <= 56))
   {
-    outDir = "NE";
+    strcpy(outDir, "NE");
   }
   if ((outDirection >= 57) && (outDirection <= 78))
   {
-    outDir = "ENE";
+    strcpy(outDir, "ENE");
   }
   if ((outDirection >= 79) && (outDirection <= 101))
   {
-    outDir = "E";
+    strcpy(outDir, "E");
   }
   if ((outDirection >= 102) && (outDirection <= 123))
   {
-    outDir = "ESE";
+    strcpy(outDir, "ESE");
   }
   if ((outDirection >= 124) && (outDirection <= 146))
   {
-    outDir = "SE";
+    strcpy(outDir, "SE");
   }
   if ((outDirection >= 147) && (outDirection <= 168))
   {
-    outDir = "SSE";
+    strcpy(outDir, "SSE");
   }
   if ((outDirection >= 169) && (outDirection <= 191))
   {
-    outDir = "S";
+    strcpy(outDir, "S");
   }
   if ((outDirection >= 192) && (outDirection <= 213))
   {
-    outDir = "SSW";
+    strcpy(outDir, "SSW");
   }
   if ((outDirection >= 214) && (outDirection <= 236))
   {
-    outDir = "SW";
+    strcpy(outDir, "SW");
   }
   if ((outDirection >= 237) && (outDirection <= 258))
   {
-    outDir = "WSW";
+    strcpy(outDir, "WSW");
   }
   if ((outDirection >= 259) && (outDirection <= 281))
   {
-    outDir = "W";
+    strcpy(outDir, "W");
   }
   if ((outDirection >= 282) && (outDirection <= 303))
   {
-    outDir = "WNW";
+    strcpy(outDir, "WNW");
   }
   if ((outDirection >= 304) && (outDirection <= 326))
   {
-    outDir = "NW";
+    strcpy(outDir, "NW");
   }
   if ((outDirection >= 327) && (outDirection <= 348))
   {
-    outDir = "NNW";
+    strcpy(outDir, "NNW");
   }
-}
-
-char *strToChar(String str)
-{
-  static char charArray[3];
-  str.toCharArray(charArray, 3);
-  return charArray;
 }
 
 void setupOTA()
