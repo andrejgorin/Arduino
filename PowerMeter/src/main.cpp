@@ -62,7 +62,7 @@ void messageHandler(char *topic, byte *payload, unsigned int length); // not in 
 void readData(Measurement m, PZEM004Tv30 p, char ph[]);
 void connectWiFi();
 void connectBroker();
-void publishMessage(Measurement);
+void publishMessage(Measurement m);
 void setupOTA();
 
 /***** Task Scheduler stuff *****/
@@ -108,7 +108,10 @@ void readData(Measurement m, PZEM004Tv30 p, char ph[])
   m.frequency = round(p.frequency());
   m.pf = p.pf();
   strcpy(m.phase, ph);
-  publishMessage(m);
+  if (!isnan(m.energy))
+  {
+    publishMessage(m);
+  }
 }
 
 /***** Connect to WiFi *****/
@@ -129,16 +132,8 @@ void connectBroker()
   client.setCallback(messageHandler);
   while (!client.connected())
   {
-    if (client.connect(THINGNAME, MQTT_USER, MQTT_PASS))
-    {
-      Serial.println("Connected.");
-    }
-    else
-    {
-      Serial.print("Failed. Error state=");
-      Serial.print(client.state());
+      client.connect(THINGNAME, MQTT_USER, MQTT_PASS);
       delay(500);
-    }
   }
   client.subscribe(IOT_SUBSCRIBE_TOPIC);
 }
