@@ -122,6 +122,7 @@ void connectWiFi()
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
+    if (millis() > 15000) ESP.restart();
   }
 }
 
