@@ -2,6 +2,10 @@
 
 My Arduino projects
 
+## Zigbee2mqtt 
+
+<zigbee2mqtt.io/docs/guide/adapters/flashing/flashing_via_cc2538-bsl.md>
+
 ## About ESP32
 
 - <https://docs.espressif.com/projects/arduino-esp32/en/latest/index.html>
