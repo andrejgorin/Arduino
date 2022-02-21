@@ -2,6 +2,7 @@
 # ESPHome config for ble gateway
 # scan devices from linux machine: $ bluetoothctl scan on
 # run esphome flashing: $ esphome run blegateway.yaml
+# run esphome gui: $ esphome dashboard .
 esphome:
   name: blegateway
   platform: ESP32
