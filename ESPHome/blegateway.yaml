@@ -1,0 +1,60 @@
+---
+# ESPHome config for ble gateway
+# scan devices from linux machine: $ bluetoothctl scan on
+# run esphome flashing: $ esphome run blegateway.yaml
+esphome:
+  name: blegateway
+  platform: ESP32
+  board: esp32doit-devkit-v1
+
+wifi:
+  ssid: !secret ssid
+  password: !secret password
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_pass
+
+# Add webserver on port 80.
+#web_server:
+#  port: 80
+
+# Enable update Over-The-Air
+ota:
+  password: !secret ota_pass
+
+# Enable Bluetooth scanning for this ESP32
+esp32_ble_tracker:
+
+sensor:
+  - platform: xiaomi_lywsdcgq
+    mac_address: 4C:65:A8:D7:49:FF
+    temperature:
+      name: "Bathroom Temperature"
+    humidity:
+      name: "Bathroom Humidity"
+    battery_level:
+      name: "Bathroom Battery Level"
+  - platform: xiaomi_lywsdcgq
+    mac_address: 4C:65:A8:D5:33:01
+    temperature:
+      name: "Kitchen Temperature"
+    humidity:
+      name: "Kitchen Humidity"
+    battery_level:
+      name: "Kitchen Battery Level"
+  - platform: xiaomi_lywsdcgq
+    mac_address: 4C:65:A8:D5:32:A4
+    temperature:
+      name: "Kidroom Temperature"
+    humidity:
+      name: "Kidroom Humidity"
+    battery_level:
+      name: "Kidroom Battery Level"
+# Show the status of ESP32
+binary_sensor:
+  - platform: status
+    name: "Bedroom Status"
