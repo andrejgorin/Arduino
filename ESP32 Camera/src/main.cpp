@@ -8,20 +8,34 @@
 #include <CRtspSession.h>
 #include "MyCredentials.h"
 
-OV2640 cam;
+// Use this URL to connect the RTSP stream, replace the IP address with the address of your device
+// rtsp://192.168.1.5:8554/mjpeg/1
+
+/** Forward dedclaration of the task handling RTSP */
+void rtspTask(void *pvParameters);
+void initRTSP(void);
+
+/** Task handle of the RTSP task */
+TaskHandle_t rtspTaskHandler;
+
+/** WiFi server for RTSP */
 WiFiServer rtspServer(8554);
-CStreamer *streamer;
-CRtspSession *session;
-WiFiClient client;
+
+/** Stream for the camera video */
+CStreamer *streamer = NULL;
+/** Session to handle the RTSP communication */
+CRtspSession *session = NULL;
+/** Client to handle the RTSP connection */
+WiFiClient rtspClient;
+/** Flag from main loop to stop the RTSP server */
+boolean stopRTSPtask = false;
+OV2640 cam;
 
 void setup()
 {
   Serial.begin(9600);
-  while (!Serial)
-  {
-    ;
-  }
-  cam.init(esp32cam_config);
+  //cam.init(esp32cam_config);
+  cam.init(esp32cam_aithinker_config);
   WiFi.mode(WIFI_STA);
   WiFi.begin(STASSID, STAPSK);
   while (WiFi.status() != WL_CONNECTED)
@@ -34,51 +48,113 @@ void setup()
   Serial.println(F("WiFi connected"));
   Serial.println("");
   Serial.println(ip);
-  rtspServer.begin();
+  initRTSP();
 }
 
 void loop()
 {
-  uint32_t msecPerFrame = 100;
-  static uint32_t lastimage = millis();
 
-  // If we have an active client connection, just service that until gone
-  // (FIXME - support multiple simultaneous clients)
-  if (session)
-  {
-    session->handleRequests(0); // we don't use a timeout here,
-    // instead we send only if we have new enough frames
+}
 
-    uint32_t now = millis();
-    if (now > lastimage + msecPerFrame || now < lastimage)
-    { // handle clock rollover
-      session->broadcastCurrentFrame(now);
-      lastimage = now;
 
-      // check if we are overrunning our max frame rate
-      now = millis();
-      if (now > lastimage + msecPerFrame)
-        printf("warning exceeding max frame rate of %d ms\n", now - lastimage);
-    }
 
-    if (session->m_stopped)
-    {
-      delete session;
-      delete streamer;
-      session = NULL;
-      streamer = NULL;
-    }
-  }
-  else
-  {
-    client = rtspServer.accept();
 
-    if (client)
-    {
-      // streamer = new SimStreamer(&client, true);             // our streamer for UDP/TCP based RTP transport
-      streamer = new OV2640Streamer(&client, cam); // our streamer for UDP/TCP based RTP transport
+/**
+ * Starts the task that handles RTSP streaming
+ */
+void initRTSP(void)
+{
+	// Create the task for the RTSP server
+	xTaskCreate(rtspTask, "RTSP", 4096, NULL, 1, &rtspTaskHandler);
 
-      session = new CRtspSession(&client, streamer); // our threads RTSP session and state
-    }
-  }
+	// Check the results
+	if (rtspTaskHandler == NULL)
+	{
+		Serial.println("Create RTSP task failed");
+	}
+	else
+	{
+		Serial.println("RTSP task up and running");
+	}
+}
+
+/**
+ * Called to stop the RTSP task, needed for OTA
+ * to avoid OTA timeout error
+ */
+void stopRTSP(void)
+{
+	stopRTSPtask = true;
+}
+
+/**
+ * The task that handles RTSP connections
+ * Starts the RTSP server
+ * Handles requests in an endless loop
+ * until a stop request is received because OTA
+ * starts
+ */
+void rtspTask(void *pvParameters)
+{
+	uint32_t msecPerFrame = 50;
+	static uint32_t lastimage = millis();
+
+	// rtspServer.setNoDelay(true);
+	rtspServer.setTimeout(1);
+	rtspServer.begin();
+
+	while (1)
+	{
+		// If we have an active client connection, just service that until gone
+		if (session)
+		{
+			session->handleRequests(0); // we don't use a timeout here,
+			// instead we send only if we have new enough frames
+
+			uint32_t now = millis();
+			if (now > lastimage + msecPerFrame || now < lastimage)
+			{ // handle clock rollover
+				session->broadcastCurrentFrame(now);
+				lastimage = now;
+			}
+
+			// Handle disconnection from RTSP client
+			if (session->m_stopped)
+			{
+				Serial.println("RTSP client closed connection");
+				delete session;
+				delete streamer;
+				session = NULL;
+				streamer = NULL;
+			}
+		}
+		else
+		{
+			rtspClient = rtspServer.accept();
+			// Handle connection request from RTSP client
+			if (rtspClient)
+			{
+				Serial.println("RTSP client started connection");
+				streamer = new OV2640Streamer(&rtspClient, cam); // our streamer for UDP/TCP based RTP transport
+
+				session = new CRtspSession(&rtspClient, streamer); // our threads RTSP session and state
+				delay(100);
+			}
+		}
+		if (stopRTSPtask)
+		{
+			// User requested RTSP server stop
+			if (rtspClient)
+			{
+				Serial.println("Shut down RTSP server because OTA starts");
+				delete session;
+				delete streamer;
+				session = NULL;
+				streamer = NULL;
+			}
+			// Delete this task
+			vTaskDelete(NULL);
+		}
+		delay(10);
+	}
 }
