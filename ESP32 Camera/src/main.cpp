@@ -33,31 +33,21 @@ OV2640 cam;
 
 void setup()
 {
-  Serial.begin(9600);
-  //cam.init(esp32cam_config);
-  cam.init(esp32cam_aithinker_config);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(STASSID, STAPSK);
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(F("."));
-  }
-  IPAddress ip;
-  ip = WiFi.localIP();
-  Serial.println(F("WiFi connected"));
-  Serial.println("");
-  Serial.println(ip);
-  initRTSP();
+	cam.init(esp32cam_aithinker_config);
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(STASSID, STAPSK);
+	while (WiFi.status() != WL_CONNECTED)
+	{
+		;
+	}
+	IPAddress ip;
+	ip = WiFi.localIP();
+	initRTSP();
 }
 
 void loop()
 {
-
 }
-
-
-
 
 /**
  * Starts the task that handles RTSP streaming
@@ -66,16 +56,6 @@ void initRTSP(void)
 {
 	// Create the task for the RTSP server
 	xTaskCreate(rtspTask, "RTSP", 4096, NULL, 1, &rtspTaskHandler);
-
-	// Check the results
-	if (rtspTaskHandler == NULL)
-	{
-		Serial.println("Create RTSP task failed");
-	}
-	else
-	{
-		Serial.println("RTSP task up and running");
-	}
 }
 
 /**
@@ -121,7 +101,6 @@ void rtspTask(void *pvParameters)
 			// Handle disconnection from RTSP client
 			if (session->m_stopped)
 			{
-				Serial.println("RTSP client closed connection");
 				delete session;
 				delete streamer;
 				session = NULL;
@@ -134,7 +113,6 @@ void rtspTask(void *pvParameters)
 			// Handle connection request from RTSP client
 			if (rtspClient)
 			{
-				Serial.println("RTSP client started connection");
 				streamer = new OV2640Streamer(&rtspClient, cam); // our streamer for UDP/TCP based RTP transport
 
 				session = new CRtspSession(&rtspClient, streamer); // our threads RTSP session and state
@@ -146,7 +124,6 @@ void rtspTask(void *pvParameters)
 			// User requested RTSP server stop
 			if (rtspClient)
 			{
-				Serial.println("Shut down RTSP server because OTA starts");
 				delete session;
 				delete streamer;
 				session = NULL;
