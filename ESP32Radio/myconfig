@@ -1,0 +1,38 @@
+clk_dst = 1                                          # Offset during daylight saving time (hours)
+clk_offset = 1                                       # Offset with respect to UTC in hours
+clk_server = pool.ntp.org                            # Time server to be used
+#
+mqttbroker = 192.168.1.3
+mqttpasswd = *******
+mqttport = 1883
+mqttprefix = esp32radio
+mqttuser = radioesp32nr1
+#
+pin_sd_cs = 21                                       # GPIO Pin number for SD card "CS"
+pin_vs_cs = 5                                        # GPIO Pin number for VS1053 "CS"
+pin_vs_dcs = 16                                      # GPIO Pin number for VS1053 "DCS"
+pin_vs_dreq = 4                                      # GPIO Pin number for VS1053 "DREQ"
+#
+preset = 12
+preset_00 = 109.206.96.34:8100                       #  0 - NAXI LOVE RADIO, Belgrade, Serbia
+preset_01 = airspectrum.cdnstream1.com:8114/1648_128 #  1 - Easy Hits Florida 128k
+preset_03 = airspectrum.cdnstream1.com:8000/1261_192 #  3 - Magic Oldies Florida
+preset_04 = airspectrum.cdnstream1.com:8008/1604_128 #  4 - Magic 60s Florida 60s Classic Rock
+preset_05 = us1.internet-radio.com:8105              #  5 - Classic Rock Florida - SHE Radio
+preset_06 = icecast.omroep.nl:80/radio1-bb-mp3       #  6 - Radio 1, NL
+preset_07 = 205.164.62.15:10032                      #  7 - 1.FM - GAIA, 64k
+preset_08 = skonto.ls.lv:8002/mp3                    #  8 - Skonto 128k
+preset_09 = 94.23.66.155:8106                        #  9 - *ILR CHILL and GROOVE
+preset_10 = ihr/IHR_IEDM                             # 10 - iHeartRadio IHR_IEDM
+preset_11 = ihr/IHR_TRAN                             # 11 - iHeartRadio IHR_TRAN
+preset_12 = 80.232.162.149:8000/plus96mp3            # 12 - SWH+2
+#
+toneha = 0
+tonehf = 0
+tonela = 0
+tonelf = 0
+#
+volume = 80
+#
+wifi_00 = MikroTik24/*******
+
