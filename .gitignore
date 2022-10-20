@@ -3,3 +3,5 @@ platformio.code-workspace
 .vscode/
 MyCredentials.h
 *.log
+ESP32Radio-V2/
+ESP32-Radio/
