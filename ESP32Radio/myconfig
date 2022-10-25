@@ -35,4 +35,6 @@ tonelf = 0
 volume = 80
 #
 wifi_00 = MikroTik24/*******
+wifi_01 = XT1562 8501/*******
+
 

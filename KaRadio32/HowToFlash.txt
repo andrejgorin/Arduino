@@ -1,0 +1,19 @@
+###
+esptool.py -p /dev/ttyACM0  --baud 921600 erase_flash
+esptool.py -p /dev/ttyACM0 --baud 921600 write_flash 0x1000 KaRadio32/bootloader.bin
+esptool.py -p /dev/ttyACM0 --baud 921600 write_flash 0x8000 KaRadio32/partitions.bin
+esptool.py -p /dev/ttyACM0 --baud 921600 write_flash 0x10000 KaRadio32/KaRadio32_22R2.bin
+esptool.py -p /dev/ttyACM0 --baud 921600 write_flash 0x1d0000 KaRadio32/KaRadio32_22R2.bin
+
+
+### 
+http://80.232.162.149:8000/plus96mp3
+https://live.radioswh.lv:8443/plusmp3
+
+###
+http://192.168.1.15/?command[&version]
+
+###
+telnet 192.168.1.15
+sys.lcd
+sys.lcd("0")
