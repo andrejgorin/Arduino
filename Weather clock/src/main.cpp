@@ -126,7 +126,7 @@ Task t0(100 * TASK_MILLISECOND, TASK_FOREVER, &myTimeCheck);
 Task t1(TASK_SECOND, TASK_FOREVER, &myLCD);
 Task t2(2 * TASK_MINUTE, TASK_FOREVER, &myLCDTimer);
 Task t3(5 * TASK_MINUTE, TASK_FOREVER, &myThingSpeak);
-Task t4(24 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
+Task t4(1 * TASK_HOUR, TASK_FOREVER, &myNTPUpdate);
 Task t5(TASK_SECOND, TASK_FOREVER, &myActivationCallback);
 Task t6(20 * TASK_MINUTE, TASK_FOREVER, &myGetWeather);
 Task t7(5 * TASK_SECOND, TASK_FOREVER, &myGetBME280);
