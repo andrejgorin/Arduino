@@ -376,7 +376,7 @@ void myLCDTimer()
 {
   static bool lcdState = true;
   const byte lcdOn = 7;
-  const byte lcdOff = 22;
+  const byte lcdOff = 21;
   int myHour = mNow.hour();
   if (myHour == lcdOn && !lcdState)
   {
